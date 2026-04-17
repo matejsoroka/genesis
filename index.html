@@ -1,0 +1,138 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta
+    name="viewport"
+    content="width=device-width, initial-scale=1.0, viewport-fit=cover, maximum-scale=1.0, user-scalable=no"
+  />
+  <meta name="theme-color" content="#0f172a" />
+  <meta name="description" content="Mobile-first OWL ontology creator and editor." />
+  <title>OntoMobile – OWL Ontology Editor</title>
+  <link rel="manifest" href="manifest.webmanifest" />
+  <link rel="icon" type="image/svg+xml" href="icons/icon.svg" />
+  <link rel="apple-touch-icon" href="icons/icon-192.png" />
+  <link rel="stylesheet" href="css/style.css" />
+</head>
+<body>
+  <header class="app-header">
+    <button id="menuBtn" class="icon-btn" aria-label="Open menu">
+      <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M3 6h18M3 12h18M3 18h18" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg>
+    </button>
+    <div class="title">
+      <h1 id="ontologyTitle">Untitled ontology</h1>
+      <p id="ontologyIri" class="subtitle">http://example.org/ontology</p>
+    </div>
+    <button id="saveBtn" class="icon-btn" aria-label="Save">
+      <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M5 3h11l5 5v13a1 1 0 0 1-1 1H5a1 1 0 0 1-1-1V4a1 1 0 0 1 1-1Z M8 3v6h8V3 M8 21v-7h8v7" fill="none" stroke="currentColor" stroke-width="2" stroke-linejoin="round"/></svg>
+    </button>
+  </header>
+
+  <nav id="sideMenu" class="side-menu" aria-hidden="true">
+    <div class="side-menu-header">
+      <h2>Ontology</h2>
+      <button id="closeMenuBtn" class="icon-btn" aria-label="Close menu">&times;</button>
+    </div>
+    <ul class="menu-list">
+      <li><button data-action="edit-meta">Edit metadata</button></li>
+      <li><button data-action="import">Import OWL / RDF</button></li>
+      <li><button data-action="export">Export OWL / RDF</button></li>
+      <li><button data-action="view-raw">View raw OWL</button></li>
+      <li><button data-action="new" class="danger">New ontology</button></li>
+      <li><button data-action="clear" class="danger">Clear all data</button></li>
+    </ul>
+    <div class="side-menu-footer">
+      <small>OntoMobile · OWL/RDF editor</small>
+    </div>
+  </nav>
+  <div id="backdrop" class="backdrop" hidden></div>
+
+  <main id="main" class="main">
+    <section id="tab-classes" class="tab-panel active" data-tab="classes">
+      <div class="list-header">
+        <h2>Classes</h2>
+        <input type="search" id="searchClasses" placeholder="Search classes…" />
+      </div>
+      <ul id="classList" class="item-list" aria-live="polite"></ul>
+      <p id="classEmpty" class="empty">No classes yet. Tap + to add one.</p>
+    </section>
+
+    <section id="tab-objectProperties" class="tab-panel" data-tab="objectProperties">
+      <div class="list-header">
+        <h2>Object properties</h2>
+        <input type="search" id="searchObjectProperties" placeholder="Search object properties…" />
+      </div>
+      <ul id="objectPropertyList" class="item-list"></ul>
+      <p id="objectPropertyEmpty" class="empty">No object properties yet.</p>
+    </section>
+
+    <section id="tab-dataProperties" class="tab-panel" data-tab="dataProperties">
+      <div class="list-header">
+        <h2>Data properties</h2>
+        <input type="search" id="searchDataProperties" placeholder="Search data properties…" />
+      </div>
+      <ul id="dataPropertyList" class="item-list"></ul>
+      <p id="dataPropertyEmpty" class="empty">No data properties yet.</p>
+    </section>
+
+    <section id="tab-individuals" class="tab-panel" data-tab="individuals">
+      <div class="list-header">
+        <h2>Individuals</h2>
+        <input type="search" id="searchIndividuals" placeholder="Search individuals…" />
+      </div>
+      <ul id="individualList" class="item-list"></ul>
+      <p id="individualEmpty" class="empty">No individuals yet.</p>
+    </section>
+  </main>
+
+  <button id="fab" class="fab" aria-label="Add item">
+    <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 5v14M5 12h14" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"/></svg>
+  </button>
+
+  <nav class="tab-bar" role="tablist">
+    <button class="tab-btn active" data-tab="classes" role="tab">
+      <svg viewBox="0 0 24 24"><rect x="4" y="4" width="16" height="16" rx="3" fill="none" stroke="currentColor" stroke-width="2"/></svg>
+      <span>Classes</span>
+    </button>
+    <button class="tab-btn" data-tab="objectProperties" role="tab">
+      <svg viewBox="0 0 24 24"><path d="M5 12h14M13 6l6 6-6 6" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>
+      <span>Object</span>
+    </button>
+    <button class="tab-btn" data-tab="dataProperties" role="tab">
+      <svg viewBox="0 0 24 24"><path d="M4 7h16M4 12h16M4 17h10" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg>
+      <span>Data</span>
+    </button>
+    <button class="tab-btn" data-tab="individuals" role="tab">
+      <svg viewBox="0 0 24 24"><circle cx="12" cy="8" r="4" fill="none" stroke="currentColor" stroke-width="2"/><path d="M4 21c0-4.5 3.6-8 8-8s8 3.5 8 8" fill="none" stroke="currentColor" stroke-width="2"/></svg>
+      <span>Individuals</span>
+    </button>
+  </nav>
+
+  <!-- Sheet / modal for editing entities -->
+  <div id="sheet" class="sheet" aria-hidden="true">
+    <div class="sheet-backdrop"></div>
+    <div class="sheet-panel" role="dialog" aria-modal="true" aria-labelledby="sheetTitle">
+      <header class="sheet-header">
+        <button class="icon-btn" data-sheet-cancel aria-label="Cancel">&times;</button>
+        <h3 id="sheetTitle">Edit</h3>
+        <button class="primary" data-sheet-save>Save</button>
+      </header>
+      <div id="sheetBody" class="sheet-body"></div>
+    </div>
+  </div>
+
+  <div id="toast" class="toast" role="status" aria-live="polite"></div>
+
+  <input type="file" id="fileInput" accept=".owl,.rdf,.xml,application/rdf+xml,text/xml" hidden />
+
+  <script src="js/owl.js"></script>
+  <script src="js/app.js"></script>
+  <script>
+    if ("serviceWorker" in navigator) {
+      window.addEventListener("load", () => {
+        navigator.serviceWorker.register("sw.js").catch(() => {});
+      });
+    }
+  </script>
+</body>
+</html>
