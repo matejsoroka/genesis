@@ -41,6 +41,22 @@ python3 -m http.server 8080
 To install as a PWA on a mobile device, visit the site over HTTPS (or
 `localhost`) and use the browser's "Add to Home screen" option.
 
+## Hosting on GitHub Pages
+
+A workflow at [`.github/workflows/pages.yml`](.github/workflows/pages.yml)
+publishes the site to GitHub Pages automatically on every push to `main`
+(and can also be triggered manually from the Actions tab).
+
+One-time setup in the repository's **Settings → Pages**:
+
+1. Under **Build and deployment → Source**, choose **GitHub Actions**.
+2. Push to `main` (or run the workflow manually). The deployment URL appears
+   in the Actions run summary — for this repo it is
+   <https://matejsoroka.github.io/genesis/>.
+
+All asset paths in the app are relative, so it works under a project sub-path
+like `/genesis/` without modification.
+
 ## Files
 
 ```
