@@ -1,0 +1,666 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<rdf:RDF
+    xmlns="http://example.org/strategy#"
+    xmlns:owl="http://www.w3.org/2002/07/owl#"
+    xmlns:rdf="http://www.w3.org/1999/02/22-rdf-syntax-ns#"
+    xmlns:rdfs="http://www.w3.org/2000/01/rdf-schema#"
+    xmlns:xsd="http://www.w3.org/2001/XMLSchema#"
+    xmlns:sh="http://www.w3.org/ns/shacl#"
+    xmlns:skos="http://www.w3.org/2004/02/skos/core#"
+    xmlns:dcterms="http://purl.org/dc/terms/"
+    xmlns:ontomobile="http://ontomobile.app/ns#"
+    xml:base="http://example.org/strategy">
+
+  <owl:Ontology rdf:about="http://example.org/strategy">
+    <rdfs:label xml:lang="en">Organization Strategy Ontology</rdfs:label>
+    <rdfs:comment xml:lang="en">Models how an Organization carries a Vision and Mission, pursues Goals, which are executed through Initiatives, made concrete by Bets, and delivered via Projects.</rdfs:comment>
+  </owl:Ontology>
+
+  <owl:AnnotationProperty rdf:about="http://ontomobile.app/ns#color"/>
+
+  <skos:Concept rdf:about="http://example.org/strategy#category-organization">
+    <skos:prefLabel xml:lang="en">Organization</skos:prefLabel>
+    <skos:definition xml:lang="en">Organizational entities</skos:definition>
+    <ontomobile:color>#38bdf8</ontomobile:color>
+  </skos:Concept>
+
+  <skos:Concept rdf:about="http://example.org/strategy#category-purpose">
+    <skos:prefLabel xml:lang="en">Purpose</skos:prefLabel>
+    <skos:definition xml:lang="en">Vision &amp; Mission</skos:definition>
+    <ontomobile:color>#a78bfa</ontomobile:color>
+  </skos:Concept>
+
+  <skos:Concept rdf:about="http://example.org/strategy#category-strategy">
+    <skos:prefLabel xml:lang="en">Strategy</skos:prefLabel>
+    <skos:definition xml:lang="en">Goals, initiatives, bets</skos:definition>
+    <ontomobile:color>#22c55e</ontomobile:color>
+  </skos:Concept>
+
+  <skos:Concept rdf:about="http://example.org/strategy#category-delivery">
+    <skos:prefLabel xml:lang="en">Delivery</skos:prefLabel>
+    <skos:definition xml:lang="en">Execution artifacts</skos:definition>
+    <ontomobile:color>#f59e0b</ontomobile:color>
+  </skos:Concept>
+
+  <owl:Class rdf:about="http://example.org/strategy#StrategicElement">
+    <rdfs:label xml:lang="en">Strategic element</rdfs:label>
+    <rdfs:comment xml:lang="en">Abstract parent for everything that has a title and an owning organization.</rdfs:comment>
+  </owl:Class>
+
+  <owl:Class rdf:about="http://example.org/strategy#Organization">
+    <rdfs:label xml:lang="en">Organization</rdfs:label>
+    <rdfs:comment xml:lang="en">A company, team, or other organized group.</rdfs:comment>
+    <rdfs:subClassOf>
+      <owl:Restriction>
+        <owl:onProperty rdf:resource="http://example.org/strategy#hasVision"/>
+        <owl:minQualifiedCardinality rdf:datatype="http://www.w3.org/2001/XMLSchema#nonNegativeInteger">1</owl:minQualifiedCardinality>
+        <owl:onClass rdf:resource="http://example.org/strategy#Vision"/>
+      </owl:Restriction>
+    </rdfs:subClassOf>
+    <rdfs:subClassOf>
+      <owl:Restriction>
+        <owl:onProperty rdf:resource="http://example.org/strategy#hasMission"/>
+        <owl:minQualifiedCardinality rdf:datatype="http://www.w3.org/2001/XMLSchema#nonNegativeInteger">1</owl:minQualifiedCardinality>
+        <owl:onClass rdf:resource="http://example.org/strategy#Mission"/>
+      </owl:Restriction>
+    </rdfs:subClassOf>
+  </owl:Class>
+
+  <owl:Class rdf:about="http://example.org/strategy#Purpose">
+    <rdfs:label xml:lang="en">Purpose</rdfs:label>
+    <rdfs:comment xml:lang="en">Abstract parent for Vision and Mission statements.</rdfs:comment>
+  </owl:Class>
+
+  <owl:Class rdf:about="http://example.org/strategy#Vision">
+    <rdfs:label xml:lang="en">Vision</rdfs:label>
+    <rdfs:comment xml:lang="en">A long-term aspirational statement of what the organization wants to become.</rdfs:comment>
+    <rdfs:subClassOf rdf:resource="http://example.org/strategy#Purpose"/>
+  </owl:Class>
+
+  <owl:Class rdf:about="http://example.org/strategy#Mission">
+    <rdfs:label xml:lang="en">Mission</rdfs:label>
+    <rdfs:comment xml:lang="en">A statement of how the organization pursues its Vision today.</rdfs:comment>
+    <rdfs:subClassOf rdf:resource="http://example.org/strategy#Purpose"/>
+  </owl:Class>
+
+  <owl:Class rdf:about="http://example.org/strategy#Goal">
+    <rdfs:label xml:lang="en">Goal</rdfs:label>
+    <rdfs:comment xml:lang="en">A measurable outcome the organization wants to achieve.</rdfs:comment>
+    <rdfs:subClassOf rdf:resource="http://example.org/strategy#StrategicElement"/>
+    <rdfs:subClassOf>
+      <owl:Restriction>
+        <owl:onProperty rdf:resource="http://example.org/strategy#pursuedBy"/>
+        <owl:someValuesFrom rdf:resource="http://example.org/strategy#Organization"/>
+      </owl:Restriction>
+    </rdfs:subClassOf>
+  </owl:Class>
+
+  <owl:Class rdf:about="http://example.org/strategy#Initiative">
+    <rdfs:label xml:lang="en">Initiative</rdfs:label>
+    <rdfs:comment xml:lang="en">A coordinated body of work supporting one or more Goals.</rdfs:comment>
+    <rdfs:subClassOf rdf:resource="http://example.org/strategy#StrategicElement"/>
+    <rdfs:subClassOf>
+      <owl:Restriction>
+        <owl:onProperty rdf:resource="http://example.org/strategy#supportsGoal"/>
+        <owl:minQualifiedCardinality rdf:datatype="http://www.w3.org/2001/XMLSchema#nonNegativeInteger">1</owl:minQualifiedCardinality>
+        <owl:onClass rdf:resource="http://example.org/strategy#Goal"/>
+      </owl:Restriction>
+    </rdfs:subClassOf>
+  </owl:Class>
+
+  <owl:Class rdf:about="http://example.org/strategy#Bet">
+    <rdfs:label xml:lang="en">Bet</rdfs:label>
+    <rdfs:comment xml:lang="en">A hypothesis-driven, time-boxed commitment inside an Initiative.</rdfs:comment>
+    <rdfs:subClassOf rdf:resource="http://example.org/strategy#StrategicElement"/>
+    <rdfs:subClassOf>
+      <owl:Restriction>
+        <owl:onProperty rdf:resource="http://example.org/strategy#partOfInitiative"/>
+        <owl:someValuesFrom rdf:resource="http://example.org/strategy#Initiative"/>
+      </owl:Restriction>
+    </rdfs:subClassOf>
+  </owl:Class>
+
+  <owl:Class rdf:about="http://example.org/strategy#Project">
+    <rdfs:label xml:lang="en">Project</rdfs:label>
+    <rdfs:comment xml:lang="en">A concrete deliverable that realizes a Bet.</rdfs:comment>
+    <rdfs:subClassOf rdf:resource="http://example.org/strategy#StrategicElement"/>
+    <rdfs:subClassOf>
+      <owl:Restriction>
+        <owl:onProperty rdf:resource="http://example.org/strategy#realizesBet"/>
+        <owl:someValuesFrom rdf:resource="http://example.org/strategy#Bet"/>
+      </owl:Restriction>
+    </rdfs:subClassOf>
+  </owl:Class>
+
+  <owl:ObjectProperty rdf:about="http://example.org/strategy#hasVision">
+    <rdfs:label xml:lang="en">has vision</rdfs:label>
+    <rdfs:comment xml:lang="en">An Organization states a Vision.</rdfs:comment>
+    <rdfs:domain rdf:resource="http://example.org/strategy#Organization"/>
+    <rdfs:range rdf:resource="http://example.org/strategy#Vision"/>
+    <owl:inverseOf rdf:resource="http://example.org/strategy#visionOf"/>
+    <rdf:type rdf:resource="http://www.w3.org/2002/07/owl#FunctionalProperty"/>
+  </owl:ObjectProperty>
+
+  <owl:ObjectProperty rdf:about="http://example.org/strategy#visionOf">
+    <rdfs:label xml:lang="en">vision of</rdfs:label>
+    <rdfs:domain rdf:resource="http://example.org/strategy#Vision"/>
+    <rdfs:range rdf:resource="http://example.org/strategy#Organization"/>
+    <owl:inverseOf rdf:resource="http://example.org/strategy#hasVision"/>
+    <rdf:type rdf:resource="http://www.w3.org/2002/07/owl#InverseFunctionalProperty"/>
+  </owl:ObjectProperty>
+
+  <owl:ObjectProperty rdf:about="http://example.org/strategy#hasMission">
+    <rdfs:label xml:lang="en">has mission</rdfs:label>
+    <rdfs:comment xml:lang="en">An Organization states a Mission.</rdfs:comment>
+    <rdfs:domain rdf:resource="http://example.org/strategy#Organization"/>
+    <rdfs:range rdf:resource="http://example.org/strategy#Mission"/>
+    <owl:inverseOf rdf:resource="http://example.org/strategy#missionOf"/>
+    <rdf:type rdf:resource="http://www.w3.org/2002/07/owl#FunctionalProperty"/>
+  </owl:ObjectProperty>
+
+  <owl:ObjectProperty rdf:about="http://example.org/strategy#missionOf">
+    <rdfs:label xml:lang="en">mission of</rdfs:label>
+    <rdfs:domain rdf:resource="http://example.org/strategy#Mission"/>
+    <rdfs:range rdf:resource="http://example.org/strategy#Organization"/>
+    <owl:inverseOf rdf:resource="http://example.org/strategy#hasMission"/>
+    <rdf:type rdf:resource="http://www.w3.org/2002/07/owl#InverseFunctionalProperty"/>
+  </owl:ObjectProperty>
+
+  <owl:ObjectProperty rdf:about="http://example.org/strategy#hasGoal">
+    <rdfs:label xml:lang="en">has goal</rdfs:label>
+    <rdfs:comment xml:lang="en">Goals an organization is pursuing.</rdfs:comment>
+    <rdfs:domain rdf:resource="http://example.org/strategy#Organization"/>
+    <rdfs:range rdf:resource="http://example.org/strategy#Goal"/>
+    <owl:inverseOf rdf:resource="http://example.org/strategy#pursuedBy"/>
+  </owl:ObjectProperty>
+
+  <owl:ObjectProperty rdf:about="http://example.org/strategy#pursuedBy">
+    <rdfs:label xml:lang="en">pursued by</rdfs:label>
+    <rdfs:domain rdf:resource="http://example.org/strategy#Goal"/>
+    <rdfs:range rdf:resource="http://example.org/strategy#Organization"/>
+    <owl:inverseOf rdf:resource="http://example.org/strategy#hasGoal"/>
+  </owl:ObjectProperty>
+
+  <owl:ObjectProperty rdf:about="http://example.org/strategy#hasInitiative">
+    <rdfs:label xml:lang="en">has initiative</rdfs:label>
+    <rdfs:domain rdf:resource="http://example.org/strategy#Goal"/>
+    <rdfs:range rdf:resource="http://example.org/strategy#Initiative"/>
+    <owl:inverseOf rdf:resource="http://example.org/strategy#supportsGoal"/>
+  </owl:ObjectProperty>
+
+  <owl:ObjectProperty rdf:about="http://example.org/strategy#supportsGoal">
+    <rdfs:label xml:lang="en">supports goal</rdfs:label>
+    <rdfs:domain rdf:resource="http://example.org/strategy#Initiative"/>
+    <rdfs:range rdf:resource="http://example.org/strategy#Goal"/>
+    <owl:inverseOf rdf:resource="http://example.org/strategy#hasInitiative"/>
+  </owl:ObjectProperty>
+
+  <owl:ObjectProperty rdf:about="http://example.org/strategy#hasBet">
+    <rdfs:label xml:lang="en">has bet</rdfs:label>
+    <rdfs:domain rdf:resource="http://example.org/strategy#Initiative"/>
+    <rdfs:range rdf:resource="http://example.org/strategy#Bet"/>
+    <owl:inverseOf rdf:resource="http://example.org/strategy#partOfInitiative"/>
+  </owl:ObjectProperty>
+
+  <owl:ObjectProperty rdf:about="http://example.org/strategy#partOfInitiative">
+    <rdfs:label xml:lang="en">part of initiative</rdfs:label>
+    <rdfs:domain rdf:resource="http://example.org/strategy#Bet"/>
+    <rdfs:range rdf:resource="http://example.org/strategy#Initiative"/>
+    <owl:inverseOf rdf:resource="http://example.org/strategy#hasBet"/>
+  </owl:ObjectProperty>
+
+  <owl:ObjectProperty rdf:about="http://example.org/strategy#hasProject">
+    <rdfs:label xml:lang="en">has project</rdfs:label>
+    <rdfs:domain rdf:resource="http://example.org/strategy#Bet"/>
+    <rdfs:range rdf:resource="http://example.org/strategy#Project"/>
+    <owl:inverseOf rdf:resource="http://example.org/strategy#realizesBet"/>
+  </owl:ObjectProperty>
+
+  <owl:ObjectProperty rdf:about="http://example.org/strategy#realizesBet">
+    <rdfs:label xml:lang="en">realizes bet</rdfs:label>
+    <rdfs:domain rdf:resource="http://example.org/strategy#Project"/>
+    <rdfs:range rdf:resource="http://example.org/strategy#Bet"/>
+    <owl:inverseOf rdf:resource="http://example.org/strategy#hasProject"/>
+  </owl:ObjectProperty>
+
+  <owl:ObjectProperty rdf:about="http://example.org/strategy#ownedBy">
+    <rdfs:label xml:lang="en">owned by</rdfs:label>
+    <rdfs:comment xml:lang="en">Who is accountable for this element.</rdfs:comment>
+    <rdfs:domain rdf:resource="http://example.org/strategy#StrategicElement"/>
+    <rdfs:range rdf:resource="http://example.org/strategy#Organization"/>
+  </owl:ObjectProperty>
+
+  <owl:DatatypeProperty rdf:about="http://example.org/strategy#orgName">
+    <rdfs:label xml:lang="en">organization name</rdfs:label>
+    <rdfs:domain rdf:resource="http://example.org/strategy#Organization"/>
+    <rdfs:range rdf:resource="http://www.w3.org/2001/XMLSchema#string"/>
+    <rdf:type rdf:resource="http://www.w3.org/2002/07/owl#FunctionalProperty"/>
+  </owl:DatatypeProperty>
+
+  <owl:DatatypeProperty rdf:about="http://example.org/strategy#title">
+    <rdfs:label xml:lang="en">title</rdfs:label>
+    <rdfs:comment xml:lang="en">Short human-readable title.</rdfs:comment>
+    <rdfs:domain rdf:resource="http://example.org/strategy#StrategicElement"/>
+    <rdfs:range rdf:resource="http://www.w3.org/2001/XMLSchema#string"/>
+    <rdf:type rdf:resource="http://www.w3.org/2002/07/owl#FunctionalProperty"/>
+  </owl:DatatypeProperty>
+
+  <owl:DatatypeProperty rdf:about="http://example.org/strategy#statement">
+    <rdfs:label xml:lang="en">statement</rdfs:label>
+    <rdfs:comment xml:lang="en">Full prose of a Vision / Mission.</rdfs:comment>
+    <rdfs:domain rdf:resource="http://example.org/strategy#Purpose"/>
+    <rdfs:range rdf:resource="http://www.w3.org/2001/XMLSchema#string"/>
+    <rdf:type rdf:resource="http://www.w3.org/2002/07/owl#FunctionalProperty"/>
+  </owl:DatatypeProperty>
+
+  <owl:DatatypeProperty rdf:about="http://example.org/strategy#description">
+    <rdfs:label xml:lang="en">description</rdfs:label>
+    <rdfs:domain rdf:resource="http://example.org/strategy#StrategicElement"/>
+    <rdfs:range rdf:resource="http://www.w3.org/2001/XMLSchema#string"/>
+  </owl:DatatypeProperty>
+
+  <owl:DatatypeProperty rdf:about="http://example.org/strategy#targetDate">
+    <rdfs:label xml:lang="en">target date</rdfs:label>
+    <rdfs:domain rdf:resource="http://example.org/strategy#Goal"/>
+    <rdfs:domain rdf:resource="http://example.org/strategy#Initiative"/>
+    <rdfs:domain rdf:resource="http://example.org/strategy#Bet"/>
+    <rdfs:domain rdf:resource="http://example.org/strategy#Project"/>
+    <rdfs:range rdf:resource="http://www.w3.org/2001/XMLSchema#date"/>
+  </owl:DatatypeProperty>
+
+  <owl:DatatypeProperty rdf:about="http://example.org/strategy#confidence">
+    <rdfs:label xml:lang="en">confidence</rdfs:label>
+    <rdfs:comment xml:lang="en">0..1 estimated probability the bet pays off.</rdfs:comment>
+    <rdfs:domain rdf:resource="http://example.org/strategy#Bet"/>
+    <rdfs:range rdf:resource="http://www.w3.org/2001/XMLSchema#decimal"/>
+    <rdf:type rdf:resource="http://www.w3.org/2002/07/owl#FunctionalProperty"/>
+  </owl:DatatypeProperty>
+
+  <owl:DatatypeProperty rdf:about="http://example.org/strategy#status">
+    <rdfs:label xml:lang="en">status</rdfs:label>
+    <rdfs:comment xml:lang="en">One of: proposed, active, paused, done, cancelled.</rdfs:comment>
+    <rdfs:domain rdf:resource="http://example.org/strategy#StrategicElement"/>
+    <rdfs:range rdf:resource="http://www.w3.org/2001/XMLSchema#string"/>
+    <rdf:type rdf:resource="http://www.w3.org/2002/07/owl#FunctionalProperty"/>
+  </owl:DatatypeProperty>
+
+  <owl:DatatypeProperty rdf:about="http://example.org/strategy#priority">
+    <rdfs:label xml:lang="en">priority</rdfs:label>
+    <rdfs:comment xml:lang="en">Integer priority; 1 = highest.</rdfs:comment>
+    <rdfs:domain rdf:resource="http://example.org/strategy#StrategicElement"/>
+    <rdfs:range rdf:resource="http://www.w3.org/2001/XMLSchema#integer"/>
+    <rdf:type rdf:resource="http://www.w3.org/2002/07/owl#FunctionalProperty"/>
+  </owl:DatatypeProperty>
+
+  <owl:NamedIndividual rdf:about="http://example.org/strategy#acme">
+    <rdfs:label xml:lang="en">Acme Inc.</rdfs:label>
+    <rdf:type rdf:resource="http://example.org/strategy#Organization"/>
+    <hasVision rdf:resource="http://example.org/strategy#acme_vision"/>
+    <hasMission rdf:resource="http://example.org/strategy#acme_mission"/>
+    <hasGoal rdf:resource="http://example.org/strategy#goal_growth"/>
+    <hasGoal rdf:resource="http://example.org/strategy#goal_retention"/>
+    <orgName rdf:datatype="http://www.w3.org/2001/XMLSchema#string">Acme Inc.</orgName>
+  </owl:NamedIndividual>
+
+  <owl:NamedIndividual rdf:about="http://example.org/strategy#acme_vision">
+    <rdfs:label xml:lang="en">Acme 2030 vision</rdfs:label>
+    <rdf:type rdf:resource="http://example.org/strategy#Vision"/>
+    <statement rdf:datatype="http://www.w3.org/2001/XMLSchema#string">A world where every small business can operate like a Fortune 500 company.</statement>
+  </owl:NamedIndividual>
+
+  <owl:NamedIndividual rdf:about="http://example.org/strategy#acme_mission">
+    <rdfs:label xml:lang="en">Acme mission</rdfs:label>
+    <rdf:type rdf:resource="http://example.org/strategy#Mission"/>
+    <statement rdf:datatype="http://www.w3.org/2001/XMLSchema#string">We build affordable automation for the long tail of small businesses.</statement>
+  </owl:NamedIndividual>
+
+  <owl:NamedIndividual rdf:about="http://example.org/strategy#goal_growth">
+    <rdfs:label xml:lang="en">Grow ARR to $100M</rdfs:label>
+    <rdf:type rdf:resource="http://example.org/strategy#Goal"/>
+    <pursuedBy rdf:resource="http://example.org/strategy#acme"/>
+    <hasInitiative rdf:resource="http://example.org/strategy#init_enterprise"/>
+    <hasInitiative rdf:resource="http://example.org/strategy#init_selfserve"/>
+    <ownedBy rdf:resource="http://example.org/strategy#acme"/>
+    <title rdf:datatype="http://www.w3.org/2001/XMLSchema#string">Grow ARR to $100M</title>
+    <targetDate rdf:datatype="http://www.w3.org/2001/XMLSchema#date">2027-12-31</targetDate>
+    <status rdf:datatype="http://www.w3.org/2001/XMLSchema#string">active</status>
+    <priority rdf:datatype="http://www.w3.org/2001/XMLSchema#integer">1</priority>
+  </owl:NamedIndividual>
+
+  <owl:NamedIndividual rdf:about="http://example.org/strategy#goal_retention">
+    <rdfs:label xml:lang="en">Increase net retention to 120%</rdfs:label>
+    <rdf:type rdf:resource="http://example.org/strategy#Goal"/>
+    <pursuedBy rdf:resource="http://example.org/strategy#acme"/>
+    <hasInitiative rdf:resource="http://example.org/strategy#init_enterprise"/>
+    <ownedBy rdf:resource="http://example.org/strategy#acme"/>
+    <title rdf:datatype="http://www.w3.org/2001/XMLSchema#string">Increase net retention to 120%</title>
+    <status rdf:datatype="http://www.w3.org/2001/XMLSchema#string">active</status>
+    <priority rdf:datatype="http://www.w3.org/2001/XMLSchema#integer">2</priority>
+  </owl:NamedIndividual>
+
+  <owl:NamedIndividual rdf:about="http://example.org/strategy#init_enterprise">
+    <rdfs:label xml:lang="en">Move upmarket</rdfs:label>
+    <rdf:type rdf:resource="http://example.org/strategy#Initiative"/>
+    <supportsGoal rdf:resource="http://example.org/strategy#goal_growth"/>
+    <supportsGoal rdf:resource="http://example.org/strategy#goal_retention"/>
+    <hasBet rdf:resource="http://example.org/strategy#bet_enterprise_sso"/>
+    <hasBet rdf:resource="http://example.org/strategy#bet_pricing_tier"/>
+    <ownedBy rdf:resource="http://example.org/strategy#acme"/>
+    <title rdf:datatype="http://www.w3.org/2001/XMLSchema#string">Move upmarket</title>
+    <status rdf:datatype="http://www.w3.org/2001/XMLSchema#string">active</status>
+  </owl:NamedIndividual>
+
+  <owl:NamedIndividual rdf:about="http://example.org/strategy#init_selfserve">
+    <rdfs:label xml:lang="en">Self-serve funnel</rdfs:label>
+    <rdf:type rdf:resource="http://example.org/strategy#Initiative"/>
+    <supportsGoal rdf:resource="http://example.org/strategy#goal_growth"/>
+    <hasBet rdf:resource="http://example.org/strategy#bet_freemium"/>
+    <ownedBy rdf:resource="http://example.org/strategy#acme"/>
+    <title rdf:datatype="http://www.w3.org/2001/XMLSchema#string">Self-serve funnel</title>
+    <status rdf:datatype="http://www.w3.org/2001/XMLSchema#string">active</status>
+  </owl:NamedIndividual>
+
+  <owl:NamedIndividual rdf:about="http://example.org/strategy#bet_enterprise_sso">
+    <rdfs:label xml:lang="en">Ship SSO + SCIM</rdfs:label>
+    <rdf:type rdf:resource="http://example.org/strategy#Bet"/>
+    <partOfInitiative rdf:resource="http://example.org/strategy#init_enterprise"/>
+    <hasProject rdf:resource="http://example.org/strategy#proj_saml"/>
+    <hasProject rdf:resource="http://example.org/strategy#proj_scim"/>
+    <ownedBy rdf:resource="http://example.org/strategy#acme"/>
+    <title rdf:datatype="http://www.w3.org/2001/XMLSchema#string">Ship SSO + SCIM this half</title>
+    <confidence rdf:datatype="http://www.w3.org/2001/XMLSchema#decimal">0.8</confidence>
+    <status rdf:datatype="http://www.w3.org/2001/XMLSchema#string">active</status>
+  </owl:NamedIndividual>
+
+  <owl:NamedIndividual rdf:about="http://example.org/strategy#bet_pricing_tier">
+    <rdfs:label xml:lang="en">Enterprise pricing tier</rdfs:label>
+    <rdf:type rdf:resource="http://example.org/strategy#Bet"/>
+    <partOfInitiative rdf:resource="http://example.org/strategy#init_enterprise"/>
+    <hasProject rdf:resource="http://example.org/strategy#proj_pricing"/>
+    <ownedBy rdf:resource="http://example.org/strategy#acme"/>
+    <title rdf:datatype="http://www.w3.org/2001/XMLSchema#string">Introduce enterprise pricing tier</title>
+    <confidence rdf:datatype="http://www.w3.org/2001/XMLSchema#decimal">0.6</confidence>
+    <status rdf:datatype="http://www.w3.org/2001/XMLSchema#string">proposed</status>
+  </owl:NamedIndividual>
+
+  <owl:NamedIndividual rdf:about="http://example.org/strategy#bet_freemium">
+    <rdfs:label xml:lang="en">Freemium onboarding</rdfs:label>
+    <rdf:type rdf:resource="http://example.org/strategy#Bet"/>
+    <partOfInitiative rdf:resource="http://example.org/strategy#init_selfserve"/>
+    <hasProject rdf:resource="http://example.org/strategy#proj_onboarding"/>
+    <ownedBy rdf:resource="http://example.org/strategy#acme"/>
+    <title rdf:datatype="http://www.w3.org/2001/XMLSchema#string">Freemium onboarding experiment</title>
+    <confidence rdf:datatype="http://www.w3.org/2001/XMLSchema#decimal">0.4</confidence>
+    <status rdf:datatype="http://www.w3.org/2001/XMLSchema#string">active</status>
+  </owl:NamedIndividual>
+
+  <owl:NamedIndividual rdf:about="http://example.org/strategy#proj_saml">
+    <rdfs:label xml:lang="en">SAML auth</rdfs:label>
+    <rdf:type rdf:resource="http://example.org/strategy#Project"/>
+    <realizesBet rdf:resource="http://example.org/strategy#bet_enterprise_sso"/>
+    <ownedBy rdf:resource="http://example.org/strategy#acme"/>
+    <title rdf:datatype="http://www.w3.org/2001/XMLSchema#string">SAML authentication</title>
+    <targetDate rdf:datatype="http://www.w3.org/2001/XMLSchema#date">2026-06-30</targetDate>
+    <status rdf:datatype="http://www.w3.org/2001/XMLSchema#string">active</status>
+  </owl:NamedIndividual>
+
+  <owl:NamedIndividual rdf:about="http://example.org/strategy#proj_scim">
+    <rdfs:label xml:lang="en">SCIM provisioning</rdfs:label>
+    <rdf:type rdf:resource="http://example.org/strategy#Project"/>
+    <realizesBet rdf:resource="http://example.org/strategy#bet_enterprise_sso"/>
+    <ownedBy rdf:resource="http://example.org/strategy#acme"/>
+    <title rdf:datatype="http://www.w3.org/2001/XMLSchema#string">SCIM user provisioning</title>
+    <status rdf:datatype="http://www.w3.org/2001/XMLSchema#string">proposed</status>
+  </owl:NamedIndividual>
+
+  <owl:NamedIndividual rdf:about="http://example.org/strategy#proj_pricing">
+    <rdfs:label xml:lang="en">Pricing page rework</rdfs:label>
+    <rdf:type rdf:resource="http://example.org/strategy#Project"/>
+    <realizesBet rdf:resource="http://example.org/strategy#bet_pricing_tier"/>
+    <ownedBy rdf:resource="http://example.org/strategy#acme"/>
+    <title rdf:datatype="http://www.w3.org/2001/XMLSchema#string">Pricing page rework</title>
+    <status rdf:datatype="http://www.w3.org/2001/XMLSchema#string">proposed</status>
+  </owl:NamedIndividual>
+
+  <owl:NamedIndividual rdf:about="http://example.org/strategy#proj_onboarding">
+    <rdfs:label xml:lang="en">Onboarding rewrite</rdfs:label>
+    <rdf:type rdf:resource="http://example.org/strategy#Project"/>
+    <realizesBet rdf:resource="http://example.org/strategy#bet_freemium"/>
+    <ownedBy rdf:resource="http://example.org/strategy#acme"/>
+    <title rdf:datatype="http://www.w3.org/2001/XMLSchema#string">Onboarding rewrite</title>
+    <status rdf:datatype="http://www.w3.org/2001/XMLSchema#string">active</status>
+  </owl:NamedIndividual>
+
+  <sh:NodeShape rdf:about="http://example.org/strategy#OrganizationShape">
+    <rdfs:label xml:lang="en">Organization shape</rdfs:label>
+    <sh:targetClass rdf:resource="http://example.org/strategy#Organization"/>
+    <sh:property>
+      <sh:PropertyShape>
+        <sh:path rdf:resource="http://example.org/strategy#orgName"/>
+        <sh:minCount rdf:datatype="http://www.w3.org/2001/XMLSchema#integer">1</sh:minCount>
+        <sh:maxCount rdf:datatype="http://www.w3.org/2001/XMLSchema#integer">1</sh:maxCount>
+        <sh:datatype rdf:resource="http://www.w3.org/2001/XMLSchema#string"/>
+        <sh:minLength rdf:datatype="http://www.w3.org/2001/XMLSchema#integer">1</sh:minLength>
+        <sh:message xml:lang="en">Organization must have a name.</sh:message>
+      </sh:PropertyShape>
+    </sh:property>
+    <sh:property>
+      <sh:PropertyShape>
+        <sh:path rdf:resource="http://example.org/strategy#hasVision"/>
+        <sh:minCount rdf:datatype="http://www.w3.org/2001/XMLSchema#integer">1</sh:minCount>
+        <sh:maxCount rdf:datatype="http://www.w3.org/2001/XMLSchema#integer">1</sh:maxCount>
+        <sh:class rdf:resource="http://example.org/strategy#Vision"/>
+        <sh:message xml:lang="en">An Organization must declare exactly one Vision.</sh:message>
+      </sh:PropertyShape>
+    </sh:property>
+    <sh:property>
+      <sh:PropertyShape>
+        <sh:path rdf:resource="http://example.org/strategy#hasMission"/>
+        <sh:minCount rdf:datatype="http://www.w3.org/2001/XMLSchema#integer">1</sh:minCount>
+        <sh:maxCount rdf:datatype="http://www.w3.org/2001/XMLSchema#integer">1</sh:maxCount>
+        <sh:class rdf:resource="http://example.org/strategy#Mission"/>
+        <sh:message xml:lang="en">An Organization must declare exactly one Mission.</sh:message>
+      </sh:PropertyShape>
+    </sh:property>
+    <sh:property>
+      <sh:PropertyShape>
+        <sh:path rdf:resource="http://example.org/strategy#hasGoal"/>
+        <sh:class rdf:resource="http://example.org/strategy#Goal"/>
+      </sh:PropertyShape>
+    </sh:property>
+  </sh:NodeShape>
+
+  <sh:NodeShape rdf:about="http://example.org/strategy#PurposeShape">
+    <rdfs:label xml:lang="en">Purpose shape</rdfs:label>
+    <sh:targetClass rdf:resource="http://example.org/strategy#Purpose"/>
+    <sh:property>
+      <sh:PropertyShape>
+        <sh:path rdf:resource="http://example.org/strategy#statement"/>
+        <sh:minCount rdf:datatype="http://www.w3.org/2001/XMLSchema#integer">1</sh:minCount>
+        <sh:maxCount rdf:datatype="http://www.w3.org/2001/XMLSchema#integer">1</sh:maxCount>
+        <sh:datatype rdf:resource="http://www.w3.org/2001/XMLSchema#string"/>
+        <sh:minLength rdf:datatype="http://www.w3.org/2001/XMLSchema#integer">10</sh:minLength>
+        <sh:message xml:lang="en">Vision / Mission statements must be at least 10 characters.</sh:message>
+      </sh:PropertyShape>
+    </sh:property>
+  </sh:NodeShape>
+
+  <sh:NodeShape rdf:about="http://example.org/strategy#GoalShape">
+    <rdfs:label xml:lang="en">Goal shape</rdfs:label>
+    <sh:targetClass rdf:resource="http://example.org/strategy#Goal"/>
+    <sh:property>
+      <sh:PropertyShape>
+        <sh:path rdf:resource="http://example.org/strategy#title"/>
+        <sh:minCount rdf:datatype="http://www.w3.org/2001/XMLSchema#integer">1</sh:minCount>
+        <sh:maxCount rdf:datatype="http://www.w3.org/2001/XMLSchema#integer">1</sh:maxCount>
+        <sh:datatype rdf:resource="http://www.w3.org/2001/XMLSchema#string"/>
+        <sh:minLength rdf:datatype="http://www.w3.org/2001/XMLSchema#integer">3</sh:minLength>
+      </sh:PropertyShape>
+    </sh:property>
+    <sh:property>
+      <sh:PropertyShape>
+        <sh:path rdf:resource="http://example.org/strategy#pursuedBy"/>
+        <sh:minCount rdf:datatype="http://www.w3.org/2001/XMLSchema#integer">1</sh:minCount>
+        <sh:class rdf:resource="http://example.org/strategy#Organization"/>
+        <sh:message xml:lang="en">A Goal must be pursued by an Organization.</sh:message>
+      </sh:PropertyShape>
+    </sh:property>
+    <sh:property>
+      <sh:PropertyShape>
+        <sh:path rdf:resource="http://example.org/strategy#hasInitiative"/>
+        <sh:class rdf:resource="http://example.org/strategy#Initiative"/>
+      </sh:PropertyShape>
+    </sh:property>
+    <sh:property>
+      <sh:PropertyShape>
+        <sh:path rdf:resource="http://example.org/strategy#status"/>
+        <sh:datatype rdf:resource="http://www.w3.org/2001/XMLSchema#string"/>
+        <sh:in rdf:parseType="Collection">
+          <rdf:Description><rdf:value>proposed</rdf:value></rdf:Description>
+          <rdf:Description><rdf:value>active</rdf:value></rdf:Description>
+          <rdf:Description><rdf:value>paused</rdf:value></rdf:Description>
+          <rdf:Description><rdf:value>done</rdf:value></rdf:Description>
+          <rdf:Description><rdf:value>cancelled</rdf:value></rdf:Description>
+        </sh:in>
+        <sh:message xml:lang="en">status must be one of proposed/active/paused/done/cancelled</sh:message>
+      </sh:PropertyShape>
+    </sh:property>
+    <sh:property>
+      <sh:PropertyShape>
+        <sh:path rdf:resource="http://example.org/strategy#priority"/>
+        <sh:datatype rdf:resource="http://www.w3.org/2001/XMLSchema#integer"/>
+        <sh:minInclusive>1</sh:minInclusive>
+        <sh:maxInclusive>5</sh:maxInclusive>
+      </sh:PropertyShape>
+    </sh:property>
+  </sh:NodeShape>
+
+  <sh:NodeShape rdf:about="http://example.org/strategy#InitiativeShape">
+    <rdfs:label xml:lang="en">Initiative shape</rdfs:label>
+    <sh:targetClass rdf:resource="http://example.org/strategy#Initiative"/>
+    <sh:property>
+      <sh:PropertyShape>
+        <sh:path rdf:resource="http://example.org/strategy#title"/>
+        <sh:minCount rdf:datatype="http://www.w3.org/2001/XMLSchema#integer">1</sh:minCount>
+        <sh:maxCount rdf:datatype="http://www.w3.org/2001/XMLSchema#integer">1</sh:maxCount>
+        <sh:datatype rdf:resource="http://www.w3.org/2001/XMLSchema#string"/>
+        <sh:minLength rdf:datatype="http://www.w3.org/2001/XMLSchema#integer">3</sh:minLength>
+      </sh:PropertyShape>
+    </sh:property>
+    <sh:property>
+      <sh:PropertyShape>
+        <sh:path rdf:resource="http://example.org/strategy#supportsGoal"/>
+        <sh:minCount rdf:datatype="http://www.w3.org/2001/XMLSchema#integer">1</sh:minCount>
+        <sh:class rdf:resource="http://example.org/strategy#Goal"/>
+        <sh:message xml:lang="en">Every Initiative must support at least one Goal.</sh:message>
+      </sh:PropertyShape>
+    </sh:property>
+    <sh:property>
+      <sh:PropertyShape>
+        <sh:path rdf:resource="http://example.org/strategy#hasBet"/>
+        <sh:class rdf:resource="http://example.org/strategy#Bet"/>
+      </sh:PropertyShape>
+    </sh:property>
+    <sh:property>
+      <sh:PropertyShape>
+        <sh:path rdf:resource="http://example.org/strategy#status"/>
+        <sh:datatype rdf:resource="http://www.w3.org/2001/XMLSchema#string"/>
+        <sh:in rdf:parseType="Collection">
+          <rdf:Description><rdf:value>proposed</rdf:value></rdf:Description>
+          <rdf:Description><rdf:value>active</rdf:value></rdf:Description>
+          <rdf:Description><rdf:value>paused</rdf:value></rdf:Description>
+          <rdf:Description><rdf:value>done</rdf:value></rdf:Description>
+          <rdf:Description><rdf:value>cancelled</rdf:value></rdf:Description>
+        </sh:in>
+      </sh:PropertyShape>
+    </sh:property>
+  </sh:NodeShape>
+
+  <sh:NodeShape rdf:about="http://example.org/strategy#BetShape">
+    <rdfs:label xml:lang="en">Bet shape</rdfs:label>
+    <sh:targetClass rdf:resource="http://example.org/strategy#Bet"/>
+    <sh:property>
+      <sh:PropertyShape>
+        <sh:path rdf:resource="http://example.org/strategy#title"/>
+        <sh:minCount rdf:datatype="http://www.w3.org/2001/XMLSchema#integer">1</sh:minCount>
+        <sh:maxCount rdf:datatype="http://www.w3.org/2001/XMLSchema#integer">1</sh:maxCount>
+        <sh:datatype rdf:resource="http://www.w3.org/2001/XMLSchema#string"/>
+        <sh:minLength rdf:datatype="http://www.w3.org/2001/XMLSchema#integer">3</sh:minLength>
+      </sh:PropertyShape>
+    </sh:property>
+    <sh:property>
+      <sh:PropertyShape>
+        <sh:path rdf:resource="http://example.org/strategy#partOfInitiative"/>
+        <sh:minCount rdf:datatype="http://www.w3.org/2001/XMLSchema#integer">1</sh:minCount>
+        <sh:maxCount rdf:datatype="http://www.w3.org/2001/XMLSchema#integer">1</sh:maxCount>
+        <sh:class rdf:resource="http://example.org/strategy#Initiative"/>
+        <sh:message xml:lang="en">Every Bet belongs to exactly one Initiative.</sh:message>
+      </sh:PropertyShape>
+    </sh:property>
+    <sh:property>
+      <sh:PropertyShape>
+        <sh:path rdf:resource="http://example.org/strategy#hasProject"/>
+        <sh:class rdf:resource="http://example.org/strategy#Project"/>
+      </sh:PropertyShape>
+    </sh:property>
+    <sh:property>
+      <sh:PropertyShape>
+        <sh:path rdf:resource="http://example.org/strategy#confidence"/>
+        <sh:datatype rdf:resource="http://www.w3.org/2001/XMLSchema#decimal"/>
+        <sh:minInclusive>0</sh:minInclusive>
+        <sh:maxInclusive>1</sh:maxInclusive>
+        <sh:message xml:lang="en">Confidence must be between 0 and 1.</sh:message>
+      </sh:PropertyShape>
+    </sh:property>
+    <sh:property>
+      <sh:PropertyShape>
+        <sh:path rdf:resource="http://example.org/strategy#status"/>
+        <sh:datatype rdf:resource="http://www.w3.org/2001/XMLSchema#string"/>
+        <sh:in rdf:parseType="Collection">
+          <rdf:Description><rdf:value>proposed</rdf:value></rdf:Description>
+          <rdf:Description><rdf:value>active</rdf:value></rdf:Description>
+          <rdf:Description><rdf:value>paused</rdf:value></rdf:Description>
+          <rdf:Description><rdf:value>done</rdf:value></rdf:Description>
+          <rdf:Description><rdf:value>cancelled</rdf:value></rdf:Description>
+        </sh:in>
+      </sh:PropertyShape>
+    </sh:property>
+  </sh:NodeShape>
+
+  <sh:NodeShape rdf:about="http://example.org/strategy#ProjectShape">
+    <rdfs:label xml:lang="en">Project shape</rdfs:label>
+    <sh:targetClass rdf:resource="http://example.org/strategy#Project"/>
+    <sh:property>
+      <sh:PropertyShape>
+        <sh:path rdf:resource="http://example.org/strategy#title"/>
+        <sh:minCount rdf:datatype="http://www.w3.org/2001/XMLSchema#integer">1</sh:minCount>
+        <sh:maxCount rdf:datatype="http://www.w3.org/2001/XMLSchema#integer">1</sh:maxCount>
+        <sh:datatype rdf:resource="http://www.w3.org/2001/XMLSchema#string"/>
+        <sh:minLength rdf:datatype="http://www.w3.org/2001/XMLSchema#integer">3</sh:minLength>
+      </sh:PropertyShape>
+    </sh:property>
+    <sh:property>
+      <sh:PropertyShape>
+        <sh:path rdf:resource="http://example.org/strategy#realizesBet"/>
+        <sh:minCount rdf:datatype="http://www.w3.org/2001/XMLSchema#integer">1</sh:minCount>
+        <sh:maxCount rdf:datatype="http://www.w3.org/2001/XMLSchema#integer">1</sh:maxCount>
+        <sh:class rdf:resource="http://example.org/strategy#Bet"/>
+        <sh:message xml:lang="en">Every Project realizes exactly one Bet.</sh:message>
+      </sh:PropertyShape>
+    </sh:property>
+    <sh:property>
+      <sh:PropertyShape>
+        <sh:path rdf:resource="http://example.org/strategy#status"/>
+        <sh:datatype rdf:resource="http://www.w3.org/2001/XMLSchema#string"/>
+        <sh:in rdf:parseType="Collection">
+          <rdf:Description><rdf:value>proposed</rdf:value></rdf:Description>
+          <rdf:Description><rdf:value>active</rdf:value></rdf:Description>
+          <rdf:Description><rdf:value>paused</rdf:value></rdf:Description>
+          <rdf:Description><rdf:value>done</rdf:value></rdf:Description>
+          <rdf:Description><rdf:value>cancelled</rdf:value></rdf:Description>
+        </sh:in>
+      </sh:PropertyShape>
+    </sh:property>
+  </sh:NodeShape>
+
+</rdf:RDF>
