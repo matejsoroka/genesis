@@ -64,7 +64,13 @@ build step, no backend — open `index.html` in any browser.
 - **Single-file RDF/XML output** containing the ontology, SHACL shapes
   and category taxonomy — importable into Protégé, RDF4J, etc.
 - Importing any RDF/XML file (OWL or SHACL or both) rebuilds the editor
-  state.
+  state. The Import sheet supports four paths so iOS never gets stuck:
+  1. **Pick file** (the iOS Files picker sometimes greys out `.owl`,
+     so there's a `.xml` copy of the bundled example next to it),
+  2. **Paste RDF/XML** straight from the clipboard,
+  3. **From URL** — fetch any CORS-friendly HTTPS URL,
+  4. **Load bundled example** — one tap to pull `examples/*.owl` from
+     the hosted site itself.
 - A **raw view** lets you copy, download or hand-edit the XML and
   re-parse it back into the model.
 

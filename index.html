@@ -40,7 +40,8 @@
     <ul class="menu-list">
       <li><button data-action="edit-meta">Edit metadata</button></li>
       <li><button data-action="categories">Manage categories</button></li>
-      <li><button data-action="import">Import OWL / SHACL</button></li>
+      <li><button data-action="import">Import OWL / SHACL…</button></li>
+      <li><button data-action="examples">Load example ontology</button></li>
       <li><button data-action="export">Export OWL / SHACL</button></li>
       <li><button data-action="view-raw">View raw RDF/XML</button></li>
       <li><button data-action="validate">Run validation</button></li>
@@ -161,7 +162,8 @@
   </div>
 
   <div id="toast" class="toast" role="status" aria-live="polite"></div>
-  <input type="file" id="fileInput" accept=".owl,.rdf,.xml,.ttl,application/rdf+xml,text/xml" hidden />
+  <!-- No 'accept' attribute: iOS Files greys out unknown extensions like .owl otherwise. -->
+  <input type="file" id="fileInput" hidden />
 
   <script src="js/owl.js"></script>
   <script src="js/shacl.js"></script>

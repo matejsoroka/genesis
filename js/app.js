@@ -500,7 +500,8 @@
     closeMenu();
     if (action === "edit-meta") openMetadataEditor();
     else if (action === "categories") openCategoryManager();
-    else if (action === "import") $("fileInput").click();
+    else if (action === "import") openImportSheet();
+    else if (action === "examples") openExamplesSheet();
     else if (action === "export") exportOwl();
     else if (action === "view-raw") openRawView();
     else if (action === "validate") { runValidation(true); setTab("shapes"); }
@@ -1484,12 +1485,141 @@
     if (!file) return;
     try {
       const text = await file.text();
+      if (!text || !/<[a-zA-Z]/.test(text)) {
+        throw new Error("The picked file doesn't look like RDF/XML.");
+      }
       const parsed = parse(text);
       model = normalize(parsed); save(); render();
+      closeSheet();
       toast("Imported " + file.name);
     } catch (err) { alert("Import failed: " + err.message); }
     finally { e.target.value = ""; }
   });
+
+  /* Bundled examples, keyed by filename (served from /examples/) */
+  const BUNDLED_EXAMPLES = [
+    {
+      file: "strategy-ontology.owl",
+      label: "Organization Strategy",
+      description:
+        "Organization → Vision & Mission; Goals → Initiatives → Bets → Projects. " +
+        "14 seeded instances, 6 SHACL shapes.",
+    },
+  ];
+
+  function examplesBaseUrl() {
+    // Resolves to e.g. https://matejsoroka.github.io/genesis/examples/
+    return new URL("examples/", window.location.href).href;
+  }
+
+  async function loadFromUrl(url) {
+    const res = await fetch(url, { cache: "no-store" });
+    if (!res.ok) throw new Error(`HTTP ${res.status} fetching ${url}`);
+    const text = await res.text();
+    if (!text) throw new Error("Empty response");
+    const parsed = parse(text);
+    model = normalize(parsed); save(); render();
+    return text;
+  }
+
+  function openImportSheet() {
+    const body = document.createElement("div");
+    body.style.cssText = "display:flex;flex-direction:column;gap:12px";
+
+    const intro = document.createElement("div");
+    intro.className = "hint";
+    intro.textContent =
+      "iOS may grey out .owl files in the Files picker. Any of the options " +
+      "below will work instead.";
+    body.appendChild(intro);
+
+    // Option 1: file picker
+    const fileBtn = document.createElement("button");
+    fileBtn.type = "button"; fileBtn.className = "secondary";
+    fileBtn.textContent = "Pick file from device…";
+    fileBtn.addEventListener("click", () => $("fileInput").click());
+    body.appendChild(field("From a file", fileBtn,
+      "Tap, then use Files / iCloud Drive / Google Drive. If .owl is greyed out, tap Browse → … → Show File Extensions, or rename to .xml before picking."));
+
+    // Option 2: paste
+    const ta = document.createElement("textarea");
+    ta.placeholder = "<?xml version=\"1.0\"?>\n<rdf:RDF …>";
+    ta.style.minHeight = "160px";
+    ta.className = "raw-view";
+    const pasteBtn = document.createElement("button");
+    pasteBtn.type = "button"; pasteBtn.className = "primary";
+    pasteBtn.textContent = "Import pasted text";
+    pasteBtn.addEventListener("click", () => {
+      const txt = ta.value.trim();
+      if (!txt) { toast("Paste some RDF/XML first"); return; }
+      try {
+        const parsed = parse(txt);
+        model = normalize(parsed); save(); render();
+        closeSheet();
+        toast("Imported pasted text");
+      } catch (e) { toast("Parse error: " + e.message); }
+    });
+    const pasteWrap = document.createElement("div");
+    pasteWrap.style.cssText = "display:flex;flex-direction:column;gap:6px";
+    pasteWrap.appendChild(ta);
+    pasteWrap.appendChild(pasteBtn);
+    body.appendChild(field("Paste RDF/XML", pasteWrap,
+      "On iPhone: tap & hold the .owl in Files → Share → Copy, then paste here."));
+
+    // Option 3: URL
+    const urlInput = inputEl("", "https://…/ontology.owl");
+    const urlBtn = document.createElement("button");
+    urlBtn.type = "button"; urlBtn.className = "primary";
+    urlBtn.textContent = "Fetch URL";
+    urlBtn.addEventListener("click", async () => {
+      const u = urlInput.value.trim();
+      if (!u) { toast("Enter a URL"); return; }
+      try {
+        await loadFromUrl(u);
+        closeSheet();
+        toast("Imported from URL");
+      } catch (e) { toast("Fetch failed: " + e.message); }
+    });
+    const urlWrap = document.createElement("div");
+    urlWrap.style.cssText = "display:flex;gap:6px;flex-wrap:wrap";
+    urlInput.style.flex = "1"; urlInput.style.minWidth = "160px";
+    urlWrap.appendChild(urlInput);
+    urlWrap.appendChild(urlBtn);
+    body.appendChild(field("From URL", urlWrap,
+      "Needs CORS-friendly hosting. Files served from this site work out of the box."));
+
+    // Option 4: bundled examples
+    const exList = document.createElement("div");
+    exList.style.cssText = "display:flex;flex-direction:column;gap:8px";
+    for (const ex of BUNDLED_EXAMPLES) {
+      const card = document.createElement("button");
+      card.type = "button";
+      card.className = "row-card";
+      card.style.cssText += ";text-align:left;cursor:pointer;border-width:1px";
+      card.innerHTML =
+        `<div style="font-weight:600">${escapeHtml(ex.label)}</div>` +
+        `<div class="hint">${escapeHtml(ex.description)}</div>`;
+      card.addEventListener("click", async () => {
+        try {
+          await loadFromUrl(examplesBaseUrl() + ex.file);
+          closeSheet();
+          toast("Loaded " + ex.label);
+        } catch (e) { toast("Load failed: " + e.message); }
+      });
+      exList.appendChild(card);
+    }
+    body.appendChild(field("Bundled examples", exList));
+
+    // Hide default Save button (we have per-option buttons)
+    openSheet("Import ontology", body, () => closeSheet());
+    const saveBtn = sheet.querySelector("[data-sheet-save]");
+    if (saveBtn) saveBtn.textContent = "Done";
+  }
+
+  function openExamplesSheet() {
+    // Same sheet, focused on examples.
+    openImportSheet();
+  }
 
   /* =========================================================
    * Graph rendering
