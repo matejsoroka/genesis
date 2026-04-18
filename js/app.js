@@ -1621,6 +1621,49 @@
     openImportSheet();
   }
 
+  /** One-tap loader that pulls the first bundled example without opening a sheet. */
+  async function loadFirstExample() {
+    const ex = BUNDLED_EXAMPLES[0];
+    if (!ex) { openImportSheet(); return; }
+    if (hasUserContent() && !confirm(
+        "Load the '" + ex.label + "' example? Your current work will be replaced — " +
+        "export first from the menu if you want to keep it.")) {
+      return;
+    }
+    try {
+      await loadFromUrl(examplesBaseUrl() + ex.file);
+      toast("Loaded " + ex.label);
+    } catch (e) {
+      // Fallback: show the full sheet so the user can paste/URL instead.
+      openImportSheet();
+      toast("Auto-load failed: " + e.message);
+    }
+  }
+
+  function hasUserContent() {
+    return (
+      (model.classes || []).length +
+      (model.objectProperties || []).length +
+      (model.dataProperties || []).length +
+      (model.individuals || []).length +
+      (model.shapes || []).length +
+      (model.categories || []).length
+    ) > 0;
+  }
+
+  /* Empty-state CTAs (Classes tab) */
+  document.addEventListener("click", (e) => {
+    const btn = e.target.closest("[data-action]");
+    if (!btn) return;
+    if (btn.dataset.action === "load-example") {
+      e.preventDefault();
+      loadFirstExample();
+    } else if (btn.dataset.action === "import-sheet") {
+      e.preventDefault();
+      openImportSheet();
+    }
+  });
+
   /* =========================================================
    * Graph rendering
    * ========================================================= */
@@ -1830,58 +1873,4 @@
    * Init
    * ========================================================= */
   render();
-  // Seed an example if the model is empty to showcase features.
-  if (!model.classes.length && !model.individuals.length && !model.shapes.length) {
-    seedExample();
-    render();
-  }
-
-  function seedExample() {
-    const ns = defaultNs();
-    const catPerson = { id: "cat_" + makeId(), name: "Agent", description: "People & organizations", color: "#38bdf8" };
-    const catPlace = { id: "cat_" + makeId(), name: "Place", description: "Physical places", color: "#22c55e" };
-    model.categories.push(catPerson, catPlace);
-
-    model.classes.push(
-      { iri: ns + "Agent", label: "Agent", comment: "", categories: [catPerson.id], subClassOf: [], equivalent: [], disjointWith: [], restrictions: [] },
-      { iri: ns + "Person", label: "Person", comment: "A human.", categories: [catPerson.id], subClassOf: [ns + "Agent"], equivalent: [], disjointWith: [], restrictions: [] },
-      { iri: ns + "Organization", label: "Organization", comment: "", categories: [catPerson.id], subClassOf: [ns + "Agent"], equivalent: [], disjointWith: [], restrictions: [] },
-      { iri: ns + "City", label: "City", comment: "", categories: [catPlace.id], subClassOf: [], equivalent: [], disjointWith: [], restrictions: [] }
-    );
-    model.objectProperties.push(
-      { iri: ns + "knows", label: "knows", comment: "", subPropertyOf: [], domain: [ns + "Person"], range: [ns + "Person"], inverseOf: "", characteristics: ["Symmetric"] },
-      { iri: ns + "livesIn", label: "livesIn", comment: "", subPropertyOf: [], domain: [ns + "Person"], range: [ns + "City"], inverseOf: "", characteristics: [] }
-    );
-    model.dataProperties.push(
-      { iri: ns + "name", label: "name", comment: "", subPropertyOf: [], domain: [ns + "Person"], range: [window.OWL.NS.xsd + "string"], characteristics: [] },
-      { iri: ns + "age", label: "age", comment: "", subPropertyOf: [], domain: [ns + "Person"], range: [window.OWL.NS.xsd + "integer"], characteristics: ["Functional"] }
-    );
-    // Add a useful restriction: every Person knows only Person.
-    const personCls = model.classes.find((c) => c.iri === ns + "Person");
-    personCls.restrictions.push({ kind: "allValuesFrom", property: ns + "knows", classIri: ns + "Person" });
-
-    model.individuals.push(
-      { iri: ns + "alice", label: "Alice", comment: "", types: [ns + "Person"],
-        objectAssertions: [{ property: ns + "knows", target: ns + "bob" }, { property: ns + "livesIn", target: ns + "berlin" }],
-        dataAssertions: [{ property: ns + "name", value: "Alice", datatype: window.OWL.NS.xsd + "string" },
-                         { property: ns + "age", value: "30", datatype: window.OWL.NS.xsd + "integer" }] },
-      { iri: ns + "bob", label: "Bob", comment: "", types: [ns + "Person"],
-        objectAssertions: [], dataAssertions: [{ property: ns + "name", value: "Bob" }] },
-      { iri: ns + "berlin", label: "Berlin", comment: "", types: [ns + "City"], objectAssertions: [], dataAssertions: [] }
-    );
-
-    model.shapes.push({
-      iri: ns + "PersonShape",
-      label: "Person shape",
-      comment: "Example: every Person must have exactly one name and a non-negative age.",
-      targetClass: ns + "Person",
-      targetNode: "", targetSubjectsOf: "", targetObjectsOf: "",
-      closed: false, severity: "", message: "",
-      properties: [
-        { path: ns + "name", minCount: 1, maxCount: 1, datatype: window.OWL.NS.xsd + "string" },
-        { path: ns + "age", datatype: window.OWL.NS.xsd + "integer", minInclusive: "0", maxInclusive: "150" },
-      ],
-    });
-    save();
-  }
 })();

@@ -63,7 +63,14 @@
       </div>
       <div id="categoryFilter" class="category-filter"></div>
       <ul id="classList" class="item-list" aria-live="polite"></ul>
-      <p id="classEmpty" class="empty">No classes yet. Tap + to add one.</p>
+      <div id="classEmpty" class="empty empty-rich">
+        <h3>Start your ontology</h3>
+        <p>No classes yet. Tap <strong>+</strong> to add one, or start from a ready-made example.</p>
+        <div class="empty-actions">
+          <button class="primary" data-action="load-example">Load example ontology</button>
+          <button class="secondary" data-action="import-sheet">Import file / paste / URL…</button>
+        </div>
+      </div>
     </section>
 
     <!-- Relations (object & data properties) -->
@@ -77,9 +84,9 @@
         <button class="seg-btn" data-seg="data">Data</button>
       </div>
       <ul id="objectPropertyList" class="item-list"></ul>
-      <p id="objectPropertyEmpty" class="empty">No object properties yet.</p>
+      <p id="objectPropertyEmpty" class="empty">No object properties yet. Tap + to add one.</p>
       <ul id="dataPropertyList" class="item-list" hidden></ul>
-      <p id="dataPropertyEmpty" class="empty">No data properties yet.</p>
+      <p id="dataPropertyEmpty" class="empty">No data properties yet. Tap + to add one.</p>
     </section>
 
     <!-- Data / individuals (knowledge graph nodes) -->
@@ -89,7 +96,7 @@
         <input type="search" id="searchIndividuals" placeholder="Search instances…" />
       </div>
       <ul id="individualList" class="item-list"></ul>
-      <p id="individualEmpty" class="empty">No instances yet.</p>
+      <p id="individualEmpty" class="empty">No instances yet. Tap + to add one.</p>
     </section>
 
     <!-- Graph -->

@@ -1,4 +1,4 @@
-const CACHE_NAME = "ontomobile-v3";
+const CACHE_NAME = "ontomobile-v4";
 const ASSETS = [
   "./",
   "./index.html",
