@@ -1,104 +1,133 @@
-# OntoMobile – Mobile-first OWL Ontology Creator & Editor
+# OntoMobile – Mobile-first Ontology + Knowledge Graph + SHACL editor
 
-A lightweight, mobile-first web app for creating and editing OWL ontologies,
-serialized as OWL / RDF‑XML. Works offline as an installable PWA — no server,
-no build step.
+A self-contained, mobile-first PWA for building ontologies, knowledge graphs
+and SHACL validation rules, all in a single file format (**RDF/XML**). No
+build step, no backend — open `index.html` in any browser.
 
-> Everything is a single folder of static files. Open `index.html` in a browser
-> (or serve the folder) and start modeling.
+## What you can do
 
-## Features
+### Classes (the "ontology")
 
-- **Mobile-first UI** with tabbed navigation, floating action button,
-  bottom-sheet editors, swipe-free gestures and dark-mode support.
-- **Editors for all core OWL entities**:
-  - Classes (with `rdfs:subClassOf`, `owl:equivalentClass`,
-    `owl:disjointWith`).
-  - Object properties (domain, range, sub-property, inverse, characteristics
-    `Functional/InverseFunctional/Transitive/Symmetric/Asymmetric/Reflexive/Irreflexive`).
-  - Data properties (domain, range — XSD datatypes, sub-property, functional).
-  - Named individuals (types, object-property assertions, data-property
-    assertions with XSD datatypes).
-- **Ontology metadata**: IRI, label, comment and custom prefix declarations.
-- **Import/Export** OWL in RDF/XML form (`.owl` / `.rdf` / `.xml`).
-- **Raw OWL view** – inspect, copy, download or edit the XML directly and
+- Organize classes with **colored categories** (stored as `skos:Concept`
+  taxonomies + `dcterms:subject` memberships so they round-trip to other
+  tools).
+- Declare `rdfs:subClassOf`, `owl:equivalentClass`, `owl:disjointWith`.
+- Define **OWL class restrictions** — the primary way to describe what a
+  class _must_ or _may_ relate to:
+  - `someValuesFrom` (existential: at least one)
+  - `allValuesFrom` (universal: only values of a class)
+  - `hasValue` (must have a particular individual or literal)
+  - `minCardinality` / `maxCardinality` / `cardinality` (exact count)
+  - Qualified variants (`min/max/qualifiedCardinality` + `onClass`)
+
+### Relations (properties)
+
+- **Object properties** with domain/range/inverse/sub-properties and all
+  characteristics: *Functional, InverseFunctional, Transitive, Symmetric,
+  Asymmetric, Reflexive, Irreflexive*.
+- **Data properties** over XSD datatypes (`string`, `integer`, `decimal`,
+  `boolean`, `date`, `dateTime`, `anyURI`, …) with functional support.
+
+### Data (instances / knowledge graph nodes)
+
+- Declare **named individuals** typed by one or more classes.
+- Assert facts: object-property edges and data-property literals with
+  XSD datatypes.
+- Everything you enter is part of a single RDF knowledge graph.
+
+### Graph tab
+
+- Interactive **force-directed graph** with pan, pinch-zoom, and drag.
+  Tap a node to edit it.
+- Two modes:
+  - **Schema** — classes as nodes; subclass, restriction and
+    domain→range edges.
+  - **Instances** — individuals as nodes; object-assertion edges.
+- Category colors bleed into the schema visualization so you can see
+  communities at a glance.
+
+### Shapes (SHACL)
+
+- Create `sh:NodeShape` objects targeting classes, specific nodes, or
+  property-subject/object sets.
+- Attach `sh:PropertyShape` constraints with a full constraint palette:
+  `minCount`, `maxCount`, `datatype`, `class`, `nodeKind`, `pattern` +
+  `flags`, `minLength`, `maxLength`, `minInclusive`, `maxInclusive`,
+  `hasValue`, `in`, plus `closed` at the node level.
+- Choose severity per shape/constraint: `Violation`, `Warning`, `Info`.
+- **Run validation in-browser**; a structured report lists every failure
+  with its focus node, path and suggested message. The header gets a red
+  badge whenever your data doesn't conform.
+
+### Import / export
+
+- **Single-file RDF/XML output** containing the ontology, SHACL shapes
+  and category taxonomy — importable into Protégé, RDF4J, etc.
+- Importing any RDF/XML file (OWL or SHACL or both) rebuilds the editor
+  state.
+- A **raw view** lets you copy, download or hand-edit the XML and
   re-parse it back into the model.
-- **Autocomplete** for references (classes, properties, individuals, XSD
-  datatypes) using the current ontology's vocabulary and prefixes.
-- **Local persistence** via `localStorage` — your work survives page reloads.
-- **Offline-ready PWA** with a manifest, service worker and installable icons.
 
 ## Getting started
 
 No dependencies, no build. Just serve the folder:
 
 ```bash
-# any static server works; for example
 python3 -m http.server 8080
-# then open http://localhost:8080/ on your phone or in a mobile emulator
+# open http://localhost:8080/ on your phone or a mobile emulator
 ```
 
-To install as a PWA on a mobile device, visit the site over HTTPS (or
-`localhost`) and use the browser's "Add to Home screen" option.
+An **example ontology** (Agent/Person/City + one SHACL shape) is seeded on
+first launch so you immediately have something to play with.
 
 ## Hosting on GitHub Pages
 
-A workflow at [`.github/workflows/pages.yml`](.github/workflows/pages.yml)
-publishes the site to GitHub Pages automatically on every push to `main`
-(and can also be triggered manually from the Actions tab).
+A workflow at `.github/workflows/pages.yml` publishes the site to GitHub
+Pages on every push to `main` (and via manual dispatch). One-time repo
+setup: **Settings → Pages → Source → GitHub Actions**. Then the app is
+live at `https://<user>.github.io/<repo>/` — for this repo,
+<https://matejsoroka.github.io/genesis/>.
 
-One-time setup in the repository's **Settings → Pages**:
-
-1. Under **Build and deployment → Source**, choose **GitHub Actions**.
-2. Push to `main` (or run the workflow manually). The deployment URL appears
-   in the Actions run summary — for this repo it is
-   <https://matejsoroka.github.io/genesis/>.
-
-All asset paths in the app are relative, so it works under a project sub-path
-like `/genesis/` without modification.
-
-## Files
+## File layout
 
 ```
-index.html              Mobile-first UI shell
-css/style.css           Styling (dark / light auto, safe-area aware)
-js/owl.js               OWL / RDF-XML serializer and parser
-js/app.js               Application logic, state management, editors
+index.html              Mobile-first UI shell (5 tabs + sheet editors)
+css/style.css           Styling (dark/light, safe-area aware)
+js/owl.js               RDF/XML + OWL + SHACL serializer & parser
+js/shacl.js             In-browser SHACL validator
+js/graph.js             SVG force-directed graph (pan/pinch/drag)
+js/app.js               App state, editors, validation UI
 manifest.webmanifest    PWA manifest
-sw.js                   Service worker for offline caching
-icons/                  App icons (SVG + PNG)
+sw.js                   Service worker (offline caching)
+icons/                  SVG + PNG app icons
+.github/workflows/      GitHub Pages deploy workflow
 ```
 
-## OWL format
+## Model reference (for `js/owl.js` imports/exports)
 
-The app reads and writes the standard **OWL RDF/XML** syntax, e.g.:
+Each entity you create is mapped to standards-compliant RDF/XML:
 
-```xml
-<owl:Class rdf:about="http://example.org/ontology#Person">
-  <rdfs:label xml:lang="en">Person</rdfs:label>
-  <rdfs:subClassOf rdf:resource="http://example.org/ontology#Agent"/>
-</owl:Class>
-```
-
-It understands:
-
-- `owl:Ontology` (IRI, `rdfs:label`, `rdfs:comment`).
-- `owl:Class` with `rdfs:subClassOf`, `owl:equivalentClass`, `owl:disjointWith`.
-- `owl:ObjectProperty` and `owl:DatatypeProperty` with `rdfs:domain`,
-  `rdfs:range`, `rdfs:subPropertyOf`, `owl:inverseOf` and characteristic types
-  (`owl:FunctionalProperty` etc.).
-- `owl:NamedIndividual` declarations and arbitrary property-assertion children,
-  with `rdf:resource` for object properties and `rdf:datatype` for data
-  properties.
-
-Generated files can be opened directly by Protégé and other OWL tools.
+| UI concept          | RDF/XML serialization                                            |
+| ------------------- | ---------------------------------------------------------------- |
+| Ontology header     | `owl:Ontology` with `rdfs:label`, `rdfs:comment`                 |
+| Category            | `skos:Concept` with `skos:prefLabel`, `ontomobile:color`         |
+| Class → category    | `<dcterms:subject rdf:resource="…concept…"/>` on the class       |
+| Class               | `owl:Class`                                                      |
+| Class restriction   | `rdfs:subClassOf → owl:Restriction / owl:onProperty / owl:…`     |
+| Object property     | `owl:ObjectProperty` (+ `rdf:type owl:SymmetricProperty` etc.)   |
+| Data property       | `owl:DatatypeProperty`                                           |
+| Individual          | `owl:NamedIndividual` + property-assertion children              |
+| SHACL shape         | `sh:NodeShape` with `sh:property → sh:PropertyShape` children    |
 
 ## Notes / limitations
 
-- Anonymous class expressions (restrictions, unions, intersections) are not
-  modelled in the UI. The raw-OWL editor lets you hand-edit any XML, but
-  round-tripping through the visual editor will drop unsupported constructs.
-- Multiple ontologies cannot be held in memory simultaneously — use Export /
-  Import to move between projects.
-- The app stores data in your browser's `localStorage`; clearing site data
-  erases the ontology.
+- Anonymous class expressions beyond restrictions (complex unions,
+  intersections, property chains) aren't modeled visually. The raw-OWL
+  editor lets you hand-edit any XML, but round-tripping through the
+  visual editor drops unsupported constructs.
+- The SHACL validator covers the commonly-used core constraint
+  components listed above. Advanced features (SPARQL-based constraints,
+  node-shape logical operators `and/or/xone/not`) are not yet
+  implemented.
+- Data is stored in the browser's `localStorage`; clearing site data
+  erases the model. Use **Export** to persist ontologies externally.

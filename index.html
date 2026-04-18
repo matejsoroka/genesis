@@ -7,8 +7,8 @@
     content="width=device-width, initial-scale=1.0, viewport-fit=cover, maximum-scale=1.0, user-scalable=no"
   />
   <meta name="theme-color" content="#0f172a" />
-  <meta name="description" content="Mobile-first OWL ontology creator and editor." />
-  <title>OntoMobile – OWL Ontology Editor</title>
+  <meta name="description" content="Mobile-first ontology, knowledge graph and SHACL editor." />
+  <title>OntoMobile – Ontology, KG & SHACL editor</title>
   <link rel="manifest" href="manifest.webmanifest" />
   <link rel="icon" type="image/svg+xml" href="icons/icon.svg" />
   <link rel="apple-touch-icon" href="icons/icon-192.png" />
@@ -23,6 +23,10 @@
       <h1 id="ontologyTitle">Untitled ontology</h1>
       <p id="ontologyIri" class="subtitle">http://example.org/ontology</p>
     </div>
+    <button id="validateBtn" class="icon-btn" aria-label="Run SHACL validation" title="Validate">
+      <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M20 6 9 17l-5-5" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>
+      <span id="validateBadge" class="badge" hidden></span>
+    </button>
     <button id="saveBtn" class="icon-btn" aria-label="Save">
       <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M5 3h11l5 5v13a1 1 0 0 1-1 1H5a1 1 0 0 1-1-1V4a1 1 0 0 1 1-1Z M8 3v6h8V3 M8 21v-7h8v7" fill="none" stroke="currentColor" stroke-width="2" stroke-linejoin="round"/></svg>
     </button>
@@ -35,53 +39,84 @@
     </div>
     <ul class="menu-list">
       <li><button data-action="edit-meta">Edit metadata</button></li>
-      <li><button data-action="import">Import OWL / RDF</button></li>
-      <li><button data-action="export">Export OWL / RDF</button></li>
-      <li><button data-action="view-raw">View raw OWL</button></li>
+      <li><button data-action="categories">Manage categories</button></li>
+      <li><button data-action="import">Import OWL / SHACL</button></li>
+      <li><button data-action="export">Export OWL / SHACL</button></li>
+      <li><button data-action="view-raw">View raw RDF/XML</button></li>
+      <li><button data-action="validate">Run validation</button></li>
       <li><button data-action="new" class="danger">New ontology</button></li>
       <li><button data-action="clear" class="danger">Clear all data</button></li>
     </ul>
     <div class="side-menu-footer">
-      <small>OntoMobile · OWL/RDF editor</small>
+      <small>OntoMobile · Ontology + KG + SHACL</small>
     </div>
   </nav>
   <div id="backdrop" class="backdrop" hidden></div>
 
   <main id="main" class="main">
+    <!-- Classes -->
     <section id="tab-classes" class="tab-panel active" data-tab="classes">
       <div class="list-header">
         <h2>Classes</h2>
         <input type="search" id="searchClasses" placeholder="Search classes…" />
       </div>
+      <div id="categoryFilter" class="category-filter"></div>
       <ul id="classList" class="item-list" aria-live="polite"></ul>
       <p id="classEmpty" class="empty">No classes yet. Tap + to add one.</p>
     </section>
 
-    <section id="tab-objectProperties" class="tab-panel" data-tab="objectProperties">
+    <!-- Relations (object & data properties) -->
+    <section id="tab-relations" class="tab-panel" data-tab="relations">
       <div class="list-header">
-        <h2>Object properties</h2>
-        <input type="search" id="searchObjectProperties" placeholder="Search object properties…" />
+        <h2>Relations</h2>
+        <input type="search" id="searchRelations" placeholder="Search properties…" />
+      </div>
+      <div class="segmented" role="tablist">
+        <button class="seg-btn active" data-seg="object">Object</button>
+        <button class="seg-btn" data-seg="data">Data</button>
       </div>
       <ul id="objectPropertyList" class="item-list"></ul>
       <p id="objectPropertyEmpty" class="empty">No object properties yet.</p>
-    </section>
-
-    <section id="tab-dataProperties" class="tab-panel" data-tab="dataProperties">
-      <div class="list-header">
-        <h2>Data properties</h2>
-        <input type="search" id="searchDataProperties" placeholder="Search data properties…" />
-      </div>
-      <ul id="dataPropertyList" class="item-list"></ul>
+      <ul id="dataPropertyList" class="item-list" hidden></ul>
       <p id="dataPropertyEmpty" class="empty">No data properties yet.</p>
     </section>
 
+    <!-- Data / individuals (knowledge graph nodes) -->
     <section id="tab-individuals" class="tab-panel" data-tab="individuals">
       <div class="list-header">
-        <h2>Individuals</h2>
-        <input type="search" id="searchIndividuals" placeholder="Search individuals…" />
+        <h2>Instances</h2>
+        <input type="search" id="searchIndividuals" placeholder="Search instances…" />
       </div>
       <ul id="individualList" class="item-list"></ul>
-      <p id="individualEmpty" class="empty">No individuals yet.</p>
+      <p id="individualEmpty" class="empty">No instances yet.</p>
+    </section>
+
+    <!-- Graph -->
+    <section id="tab-graph" class="tab-panel" data-tab="graph">
+      <div class="list-header compact">
+        <h2>Graph</h2>
+        <div class="segmented small" role="tablist">
+          <button class="seg-btn active" data-graph-mode="schema">Schema</button>
+          <button class="seg-btn" data-graph-mode="instances">Instances</button>
+        </div>
+      </div>
+      <div id="graphCanvas" class="graph-canvas"></div>
+      <div class="graph-toolbar">
+        <button id="graphFit" class="secondary small">Fit</button>
+        <button id="graphReheat" class="secondary small">Re-layout</button>
+        <span id="graphInfo" class="hint"></span>
+      </div>
+    </section>
+
+    <!-- Shapes / SHACL -->
+    <section id="tab-shapes" class="tab-panel" data-tab="shapes">
+      <div class="list-header">
+        <h2>SHACL shapes</h2>
+        <input type="search" id="searchShapes" placeholder="Search shapes…" />
+      </div>
+      <ul id="shapeList" class="item-list"></ul>
+      <p id="shapeEmpty" class="empty">No shapes yet. Tap + to add one.</p>
+      <div class="validation-summary" id="validationSummary"></div>
     </section>
   </main>
 
@@ -94,17 +129,21 @@
       <svg viewBox="0 0 24 24"><rect x="4" y="4" width="16" height="16" rx="3" fill="none" stroke="currentColor" stroke-width="2"/></svg>
       <span>Classes</span>
     </button>
-    <button class="tab-btn" data-tab="objectProperties" role="tab">
+    <button class="tab-btn" data-tab="relations" role="tab">
       <svg viewBox="0 0 24 24"><path d="M5 12h14M13 6l6 6-6 6" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>
-      <span>Object</span>
-    </button>
-    <button class="tab-btn" data-tab="dataProperties" role="tab">
-      <svg viewBox="0 0 24 24"><path d="M4 7h16M4 12h16M4 17h10" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg>
-      <span>Data</span>
+      <span>Relations</span>
     </button>
     <button class="tab-btn" data-tab="individuals" role="tab">
       <svg viewBox="0 0 24 24"><circle cx="12" cy="8" r="4" fill="none" stroke="currentColor" stroke-width="2"/><path d="M4 21c0-4.5 3.6-8 8-8s8 3.5 8 8" fill="none" stroke="currentColor" stroke-width="2"/></svg>
-      <span>Individuals</span>
+      <span>Data</span>
+    </button>
+    <button class="tab-btn" data-tab="graph" role="tab">
+      <svg viewBox="0 0 24 24"><circle cx="6" cy="6" r="2.5" fill="none" stroke="currentColor" stroke-width="2"/><circle cx="18" cy="6" r="2.5" fill="none" stroke="currentColor" stroke-width="2"/><circle cx="12" cy="18" r="2.5" fill="none" stroke="currentColor" stroke-width="2"/><path d="M7 7l4 9M17 7l-4 9M8 6h8" fill="none" stroke="currentColor" stroke-width="2"/></svg>
+      <span>Graph</span>
+    </button>
+    <button class="tab-btn" data-tab="shapes" role="tab">
+      <svg viewBox="0 0 24 24"><path d="M12 3l9 5-9 5-9-5 9-5Z M3 13l9 5 9-5 M3 18l9 5 9-5" fill="none" stroke="currentColor" stroke-width="2" stroke-linejoin="round"/></svg>
+      <span>Shapes</span>
     </button>
   </nav>
 
@@ -122,10 +161,11 @@
   </div>
 
   <div id="toast" class="toast" role="status" aria-live="polite"></div>
-
-  <input type="file" id="fileInput" accept=".owl,.rdf,.xml,application/rdf+xml,text/xml" hidden />
+  <input type="file" id="fileInput" accept=".owl,.rdf,.xml,.ttl,application/rdf+xml,text/xml" hidden />
 
   <script src="js/owl.js"></script>
+  <script src="js/shacl.js"></script>
+  <script src="js/graph.js"></script>
   <script src="js/app.js"></script>
   <script>
     if ("serviceWorker" in navigator) {
