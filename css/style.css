@@ -541,3 +541,12 @@ hr.sep { border: none; border-top: 1px solid var(--border); margin: 8px 0; }
   .list-header h2 { font-size: 22px; }
   .tab-btn span { font-size: 12px; }
 }
+
+@media (min-width: 1024px) {
+  /* Let the graph use the desktop viewport while other tabs stay readable. */
+  #tab-graph.active {
+    width: calc(100vw - 32px);
+    margin-left: 50%;
+    transform: translateX(-50%);
+  }
+}
