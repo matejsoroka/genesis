@@ -70,11 +70,14 @@
       const cx = rect.width / 2;
       const cy = rect.height / 2;
 
-      const repulsion = 1400;
-      const springLen = 110;
-      const springK = 0.02;
-      const gravity = 0.02;
-      const damping = 0.85;
+      const dense = nodes.length > 120;
+      const repulsion = dense ? 650 : 1100;
+      const springLen = dense ? 72 : 100;
+      const springK = dense ? 0.012 : 0.018;
+      const gravity = dense ? 0.003 : 0.012;
+      const damping = dense ? 0.68 : 0.78;
+      const maxSpeed = dense ? 3.5 : 6;
+      const maxTicks = nodes.length > 400 ? 60 : dense ? 100 : 240;
 
       for (const a of nodes) {
         a.fx = 0;
@@ -111,33 +114,40 @@
         b.fx -= nx * diff;
         b.fy -= ny * diff;
       }
+      let movement = 0;
       for (const n of nodes) {
-        if (n.pinned) continue;
-        n.vx = (n.vx + n.fx) * damping;
-        n.vy = (n.vy + n.fy) * damping;
+        if (n.pinned) {
+          n.vx = 0;
+          n.vy = 0;
+          continue;
+        }
+        n.vx = Math.max(-maxSpeed, Math.min(maxSpeed, (n.vx + n.fx) * damping));
+        n.vy = Math.max(-maxSpeed, Math.min(maxSpeed, (n.vy + n.fy) * damping));
         n.x += n.vx;
         n.y += n.vy;
+        movement += Math.abs(n.vx) + Math.abs(n.vy);
       }
       renderPositions();
       ticks++;
-      if (ticks < 600 && running) {
+      if (ticks < maxTicks && movement > nodes.length * 0.015 && running) {
         rafId = requestAnimationFrame(step);
       } else {
         running = false;
+        rafId = null;
       }
     }
 
     function start() {
+      if (running || !nodes.length) return;
       ticks = 0;
-      if (!running) {
-        running = true;
-        rafId = requestAnimationFrame(step);
-      }
+      running = true;
+      rafId = requestAnimationFrame(step);
     }
 
     function stop() {
       running = false;
       if (rafId) cancelAnimationFrame(rafId);
+      rafId = null;
     }
 
     function renderPositions() {
@@ -160,6 +170,13 @@
     }
 
     function setData(ns, ls) {
+      const previousPositions = new Map(
+        nodes.map((node) => [
+          node.iri,
+          { x: node.x, y: node.y, pinned: node.pinned },
+        ])
+      );
+      stop();
       nodes = ns;
       links = ls;
       linksLayer.innerHTML = "";
@@ -169,15 +186,27 @@
       const rect = container.getBoundingClientRect();
       const cx = rect.width / 2 || 150;
       const cy = rect.height / 2 || 150;
-      for (const n of nodes) {
-        if (n.x == null)
-          n.x = cx + (Math.random() - 0.5) * 200;
-        if (n.y == null)
-          n.y = cy + (Math.random() - 0.5) * 200;
-        n.vx = n.vx || 0;
-        n.vy = n.vy || 0;
+      const columns = Math.max(1, Math.ceil(Math.sqrt(nodes.length)));
+      const rows = Math.max(1, Math.ceil(nodes.length / columns));
+      const spacing = nodes.length > 120 ? 58 : 82;
+      for (let index = 0; index < nodes.length; index++) {
+        const n = nodes[index];
+        const previous = previousPositions.get(n.iri);
+        if (previous && Number.isFinite(previous.x) && Number.isFinite(previous.y)) {
+          n.x = previous.x;
+          n.y = previous.y;
+          n.pinned = previous.pinned;
+        } else {
+          const column = index % columns;
+          const row = Math.floor(index / columns);
+          n.x = cx + (column - (columns - 1) / 2) * spacing;
+          n.y = cy + (row - (rows - 1) / 2) * spacing;
+        }
+        n.vx = 0;
+        n.vy = 0;
       }
 
+      const showLinkLabels = links.length <= 80;
       for (const l of links) {
         const line = document.createElementNS(SVGNS, "line");
         line.setAttribute("class", `link link-${l.kind || "obj"}`);
@@ -185,10 +214,15 @@
         line.setAttribute("stroke-width", l.kind === "sub" ? 1.6 : 1.3);
         if (l.dashed) line.setAttribute("stroke-dasharray", "4 3");
         line.setAttribute("marker-end", `url(#${markerForKind(l.kind)})`);
+        if (l.label) {
+          const title = document.createElementNS(SVGNS, "title");
+          title.textContent = l.label;
+          line.appendChild(title);
+        }
         linksLayer.appendChild(line);
         l._path = line;
 
-        if (l.label) {
+        if (l.label && showLinkLabels) {
           const txt = document.createElementNS(SVGNS, "text");
           txt.setAttribute("class", "linklabel");
           txt.setAttribute("text-anchor", "middle");
@@ -199,9 +233,13 @@
         }
       }
 
+      const showSubtitles = nodes.length <= 120;
       for (const n of nodes) {
         const g = document.createElementNS(SVGNS, "g");
         g.setAttribute("class", `node node-${n.kind || "default"}`);
+        const title = document.createElementNS(SVGNS, "title");
+        title.textContent = [n.label, n.subtitle].filter(Boolean).join(" — ");
+        g.appendChild(title);
         const shape = n.kind === "individual" ? createCircle(n) : createRoundedRect(n);
         g.appendChild(shape);
 
@@ -212,7 +250,7 @@
         label.textContent = truncate(n.label || "?", 18);
         g.appendChild(label);
 
-        if (n.subtitle) {
+        if (n.subtitle && showSubtitles) {
           const sub = document.createElementNS(SVGNS, "text");
           sub.setAttribute("class", "nodesubtitle");
           sub.setAttribute("text-anchor", "middle");
@@ -280,6 +318,9 @@
       let dragging = false;
       let startClientX = 0, startClientY = 0, startNodeX = 0, startNodeY = 0;
       el.addEventListener("pointerdown", (e) => {
+        // Manual positioning takes control of the layout; do not let the
+        // remaining simulation pull every other node around while dragging.
+        stop();
         dragging = true;
         el.setPointerCapture(e.pointerId);
         startClientX = e.clientX;
@@ -299,7 +340,6 @@
         node.vx = 0; node.vy = 0;
         if (Math.abs(dx) + Math.abs(dy) > 2) el._dragged = true;
         renderPositions();
-        start();
       });
       el.addEventListener("pointerup", () => {
         dragging = false;
@@ -382,7 +422,6 @@
 
     const ro = new ResizeObserver(() => {
       resize();
-      start();
     });
     ro.observe(container);
 
