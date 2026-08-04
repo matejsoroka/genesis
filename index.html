@@ -40,7 +40,7 @@
     <ul class="menu-list">
       <li><button data-action="edit-meta">Edit metadata</button></li>
       <li><button data-action="categories">Manage categories</button></li>
-      <li><button data-action="import">Import OWL / SHACL…</button></li>
+      <li><button data-action="import">Import RDF/XML or Turtle…</button></li>
       <li><button data-action="examples">Load example ontology</button></li>
       <li><button data-action="export">Export OWL / SHACL</button></li>
       <li><button data-action="view-raw">View raw RDF/XML</button></li>
@@ -172,6 +172,7 @@
   <!-- No 'accept' attribute: iOS Files greys out unknown extensions like .owl otherwise. -->
   <input type="file" id="fileInput" hidden />
 
+  <script src="js/n3.min.js"></script>
   <script src="js/owl.js"></script>
   <script src="js/shacl.js"></script>
   <script src="js/graph.js"></script>

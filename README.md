@@ -1,8 +1,8 @@
 # OntoMobile – Mobile-first Ontology + Knowledge Graph + SHACL editor
 
 A self-contained, mobile-first PWA for building ontologies, knowledge graphs
-and SHACL validation rules, all in a single file format (**RDF/XML**). No
-build step, no backend — open `index.html` in any browser.
+and SHACL validation rules. It imports **RDF/XML and Turtle** and exports
+RDF/XML. No build step, no backend — open `index.html` in any browser.
 
 ## What you can do
 
@@ -63,11 +63,13 @@ build step, no backend — open `index.html` in any browser.
 
 - **Single-file RDF/XML output** containing the ontology, SHACL shapes
   and category taxonomy — importable into Protégé, RDF4J, etc.
-- Importing any RDF/XML file (OWL or SHACL or both) rebuilds the editor
-  state. The Import sheet supports four paths so iOS never gets stuck:
+- Importing RDF/XML or Turtle rebuilds the editor state. Generic Turtle data
+  is mapped into classes, properties and individuals; missing property
+  domains/ranges are inferred from typed resources for visualization.
+  The Import sheet supports four paths so iOS never gets stuck:
   1. **Pick file** (the iOS Files picker sometimes greys out `.owl`,
      so there's a `.xml` copy of the bundled example next to it),
-  2. **Paste RDF/XML** straight from the clipboard,
+  2. **Paste RDF/XML or Turtle** straight from the clipboard,
   3. **From URL** — fetch any CORS-friendly HTTPS URL,
   4. **Load bundled example** — one tap to pull `examples/*.owl` from
      the hosted site itself.
@@ -99,7 +101,8 @@ live at `https://<user>.github.io/<repo>/` — for this repo,
 ```
 index.html              Mobile-first UI shell (5 tabs + sheet editors)
 css/style.css           Styling (dark/light, safe-area aware)
-js/owl.js               RDF/XML + OWL + SHACL serializer & parser
+js/owl.js               RDF/XML/Turtle + OWL + SHACL serializer & parser
+js/n3.min.js            Vendored N3 Turtle parser
 js/shacl.js             In-browser SHACL validator
 js/graph.js             SVG force-directed graph (pan/pinch/drag)
 js/app.js               App state, editors, validation UI

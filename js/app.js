@@ -6,7 +6,7 @@
   const {
     emptyOntology,
     serialize,
-    parse,
+    parseDocument,
     defaultPrefixes,
     expand,
     shorten,
@@ -1456,7 +1456,7 @@
     body.appendChild(row);
     openSheet("Raw OWL + SHACL (RDF/XML)", body, () => {
       try {
-        const parsed = parse(ta.value);
+        const parsed = parseDocument(ta.value);
         model = normalize(parsed); save(); render(); closeSheet();
         toast("Model updated from raw");
       } catch (e) { toast("Parse error: " + e.message); }
@@ -1485,10 +1485,7 @@
     if (!file) return;
     try {
       const text = await file.text();
-      if (!text || !/<[a-zA-Z]/.test(text)) {
-        throw new Error("The picked file doesn't look like RDF/XML.");
-      }
-      const parsed = parse(text);
+      const parsed = parseDocument(text);
       model = normalize(parsed); save(); render();
       closeSheet();
       toast("Imported " + file.name);
@@ -1517,7 +1514,7 @@
     if (!res.ok) throw new Error(`HTTP ${res.status} fetching ${url}`);
     const text = await res.text();
     if (!text) throw new Error("Empty response");
-    const parsed = parse(text);
+    const parsed = parseDocument(text);
     model = normalize(parsed); save(); render();
     return text;
   }
@@ -1529,7 +1526,7 @@
     const intro = document.createElement("div");
     intro.className = "hint";
     intro.textContent =
-      "iOS may grey out .owl files in the Files picker. Any of the options " +
+      "Import RDF/XML or Turtle. If iOS greys out an ontology file, any option " +
       "below will work instead.";
     body.appendChild(intro);
 
@@ -1539,11 +1536,11 @@
     fileBtn.textContent = "Pick file from device…";
     fileBtn.addEventListener("click", () => $("fileInput").click());
     body.appendChild(field("From a file", fileBtn,
-      "Tap, then use Files / iCloud Drive / Google Drive. If .owl is greyed out, tap Browse → … → Show File Extensions, or rename to .xml before picking."));
+      "Tap, then use Files / iCloud Drive / Google Drive. Supports .owl, .rdf, .xml, .ttl and .turtle."));
 
     // Option 2: paste
     const ta = document.createElement("textarea");
-    ta.placeholder = "<?xml version=\"1.0\"?>\n<rdf:RDF …>";
+    ta.placeholder = "@prefix ex: <https://example.com/> .\n\nex:item a ex:Thing .";
     ta.style.minHeight = "160px";
     ta.className = "raw-view";
     const pasteBtn = document.createElement("button");
@@ -1551,9 +1548,9 @@
     pasteBtn.textContent = "Import pasted text";
     pasteBtn.addEventListener("click", () => {
       const txt = ta.value.trim();
-      if (!txt) { toast("Paste some RDF/XML first"); return; }
+      if (!txt) { toast("Paste some RDF/XML or Turtle first"); return; }
       try {
-        const parsed = parse(txt);
+        const parsed = parseDocument(txt);
         model = normalize(parsed); save(); render();
         closeSheet();
         toast("Imported pasted text");
@@ -1563,8 +1560,8 @@
     pasteWrap.style.cssText = "display:flex;flex-direction:column;gap:6px";
     pasteWrap.appendChild(ta);
     pasteWrap.appendChild(pasteBtn);
-    body.appendChild(field("Paste RDF/XML", pasteWrap,
-      "On iPhone: tap & hold the .owl in Files → Share → Copy, then paste here."));
+    body.appendChild(field("Paste RDF/XML or Turtle", pasteWrap,
+      "Paste an RDF/XML document or Turtle text beginning with @prefix / PREFIX."));
 
     // Option 3: URL
     const urlInput = inputEl("", "https://…/ontology.owl");
@@ -1753,11 +1750,22 @@
       for (const ind of model.individuals) {
         const typeIri = (ind.types || [])[0];
         const typeClass = typeIri ? model.classes.find((x) => x.iri === typeIri) : null;
+        const dataValue = (localName) => {
+          const assertion = (ind.dataAssertions || []).find(
+            (a) => display(a.property).split(":").pop() === localName
+          );
+          return assertion ? assertion.value : "";
+        };
+        const sourcePropertyName = dataValue("sourcePropertyName");
+        const sourceDataType = dataValue("sourceDataType");
+        const details = [typeClass ? displayLabel(typeClass) : "", sourceDataType]
+          .filter(Boolean)
+          .join(" · ");
         ensureNode({
           iri: ind.iri,
           kind: "individual",
-          label: displayLabel(ind),
-          subtitle: typeClass ? displayLabel(typeClass) : display(ind.iri),
+          label: ind.label || sourcePropertyName || display(ind.iri),
+          subtitle: details || display(ind.iri),
           borderColor: typeClass ? categoryColorForClass(typeClass) : "#a78bfa",
         });
       }

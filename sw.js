@@ -1,8 +1,9 @@
-const CACHE_NAME = "ontomobile-v4";
+const CACHE_NAME = "ontomobile-v5";
 const ASSETS = [
   "./",
   "./index.html",
   "./css/style.css",
+  "./js/n3.min.js",
   "./js/app.js",
   "./js/owl.js",
   "./js/shacl.js",

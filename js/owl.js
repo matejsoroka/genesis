@@ -1,4 +1,4 @@
-/* OntoMobile OWL / RDF-XML + SHACL serializer & parser.
+/* OntoMobile OWL / RDF-XML, Turtle + SHACL serializer & parser.
  *
  * Produces a single RDF/XML document that contains:
  *   - owl:Ontology metadata
@@ -934,6 +934,225 @@
     return model;
   }
 
+  /* Parse a Turtle document into the same editor model used by RDF/XML.
+   * Turtle is first treated as a generic RDF graph. Schema declarations are
+   * retained when present, while classes and property domains/ranges are also
+   * inferred from ordinary instance data so "pure data" graphs remain useful
+   * in both graph views. */
+  function parseTurtle(turtleText) {
+    if (!global.N3 || !global.N3.Parser) {
+      throw new Error("Turtle parser is not available");
+    }
+
+    let parser;
+    let quads;
+    try {
+      parser = new global.N3.Parser();
+      quads = parser.parse(turtleText);
+    } catch (error) {
+      throw new Error("Invalid Turtle: " + error.message);
+    }
+
+    const RDF_TYPE = NS.rdf + "type";
+    const RDFS_CLASS = NS.rdfs + "Class";
+    const RDFS_LABEL = NS.rdfs + "label";
+    const RDFS_COMMENT = NS.rdfs + "comment";
+    const RDFS_DOMAIN = NS.rdfs + "domain";
+    const RDFS_RANGE = NS.rdfs + "range";
+    const RDFS_SUBCLASS = NS.rdfs + "subClassOf";
+    const RDFS_SUBPROPERTY = NS.rdfs + "subPropertyOf";
+    const OWL_CLASS = NS.owl + "Class";
+    const OWL_ONTOLOGY = NS.owl + "Ontology";
+    const OWL_NAMED_INDIVIDUAL = NS.owl + "NamedIndividual";
+    const OWL_OBJECT_PROPERTY = NS.owl + "ObjectProperty";
+    const OWL_DATA_PROPERTY = NS.owl + "DatatypeProperty";
+
+    const prefixes = Object.assign({}, defaultPrefixes(""), parser._prefixes || {});
+    const termId = (term) =>
+      term && term.termType === "BlankNode" ? "_:" + term.value : term ? term.value : "";
+    const bySubject = new Map();
+    for (const q of quads) {
+      const id = termId(q.subject);
+      if (!bySubject.has(id)) bySubject.set(id, []);
+      bySubject.get(id).push(q);
+    }
+    const objects = (subject, predicate) =>
+      (bySubject.get(subject) || [])
+        .filter((q) => q.predicate.value === predicate)
+        .map((q) => q.object);
+    const resourceObjects = (subject, predicate) =>
+      objects(subject, predicate)
+        .filter((term) => term.termType === "NamedNode" || term.termType === "BlankNode")
+        .map(termId);
+    const literalValue = (subject, predicate) => {
+      const term = objects(subject, predicate).find((value) => value.termType === "Literal");
+      return term ? term.value : "";
+    };
+    const typesBySubject = new Map();
+    for (const [subject] of bySubject) {
+      typesBySubject.set(subject, new Set(resourceObjects(subject, RDF_TYPE)));
+    }
+
+    const ontologyIri = Array.from(typesBySubject.entries()).find(([, types]) =>
+      types.has(OWL_ONTOLOGY)
+    )?.[0];
+    const firstPrefix = Object.values(parser._prefixes || {})[0] || "";
+    const model = emptyOntology(ontologyIri || firstPrefix || "http://example.org/ontology");
+    model.prefixes = prefixes;
+    model.label = ontologyIri
+      ? literalValue(ontologyIri, RDFS_LABEL)
+      : "Imported Turtle graph";
+    model.comment = ontologyIri ? literalValue(ontologyIri, RDFS_COMMENT) : "";
+
+    const classIris = new Set();
+    const objectPropertyIris = new Set();
+    const dataPropertyIris = new Set();
+    const schemaTypes = new Set([
+      OWL_CLASS,
+      RDFS_CLASS,
+      OWL_ONTOLOGY,
+      OWL_OBJECT_PROPERTY,
+      OWL_DATA_PROPERTY,
+      NS.sh + "NodeShape",
+      NS.sh + "PropertyShape",
+    ]);
+
+    for (const [subject, types] of typesBySubject) {
+      if (types.has(OWL_CLASS) || types.has(RDFS_CLASS)) classIris.add(subject);
+      if (types.has(OWL_OBJECT_PROPERTY)) objectPropertyIris.add(subject);
+      if (types.has(OWL_DATA_PROPERTY)) dataPropertyIris.add(subject);
+      for (const type of types) {
+        if (!schemaTypes.has(type) && type !== OWL_NAMED_INDIVIDUAL) classIris.add(type);
+      }
+    }
+    for (const q of quads) {
+      if (q.predicate.value === RDF_TYPE) continue;
+      if (q.object.termType === "Literal") dataPropertyIris.add(q.predicate.value);
+      else if (q.object.termType === "NamedNode" || q.object.termType === "BlankNode")
+        objectPropertyIris.add(q.predicate.value);
+    }
+    // Annotation and schema predicates are represented by dedicated model fields.
+    for (const iri of [
+      RDFS_LABEL,
+      RDFS_COMMENT,
+      RDFS_DOMAIN,
+      RDFS_RANGE,
+      RDFS_SUBCLASS,
+      RDFS_SUBPROPERTY,
+    ]) {
+      objectPropertyIris.delete(iri);
+      dataPropertyIris.delete(iri);
+    }
+
+    model.classes = Array.from(classIris).map((iri) => ({
+      iri,
+      label: literalValue(iri, RDFS_LABEL),
+      comment: literalValue(iri, RDFS_COMMENT),
+      categories: [],
+      subClassOf: resourceObjects(iri, RDFS_SUBCLASS),
+      equivalent: resourceObjects(iri, NS.owl + "equivalentClass"),
+      disjointWith: resourceObjects(iri, NS.owl + "disjointWith"),
+      restrictions: [],
+    }));
+
+    function inferredTypesForResource(iri) {
+      const types = typesBySubject.get(iri);
+      if (!types) return [];
+      return Array.from(types).filter(
+        (type) => !schemaTypes.has(type) && type !== OWL_NAMED_INDIVIDUAL
+      );
+    }
+    function inferPropertyEnds(predicate) {
+      const domains = new Set(resourceObjects(predicate, RDFS_DOMAIN));
+      const ranges = new Set(resourceObjects(predicate, RDFS_RANGE));
+      for (const q of quads) {
+        if (q.predicate.value !== predicate) continue;
+        for (const type of inferredTypesForResource(termId(q.subject))) domains.add(type);
+        if (q.object.termType !== "Literal") {
+          for (const type of inferredTypesForResource(termId(q.object))) ranges.add(type);
+        }
+      }
+      return { domain: Array.from(domains), range: Array.from(ranges) };
+    }
+    function propertyBase(iri) {
+      const ends = inferPropertyEnds(iri);
+      return {
+        iri,
+        label: literalValue(iri, RDFS_LABEL),
+        comment: literalValue(iri, RDFS_COMMENT),
+        subPropertyOf: resourceObjects(iri, RDFS_SUBPROPERTY),
+        domain: ends.domain,
+        range: ends.range,
+        characteristics: [],
+      };
+    }
+    model.objectProperties = Array.from(objectPropertyIris).map((iri) =>
+      Object.assign(propertyBase(iri), {
+        inverseOf: resourceObjects(iri, NS.owl + "inverseOf")[0] || "",
+      })
+    );
+    model.dataProperties = Array.from(dataPropertyIris).map(propertyBase);
+
+    for (const [iri, subjectQuads] of bySubject) {
+      const declaredTypes = typesBySubject.get(iri) || new Set();
+      if (Array.from(declaredTypes).some((type) => schemaTypes.has(type))) continue;
+      const hasInstanceData = subjectQuads.some(
+        (q) =>
+          q.predicate.value !== RDF_TYPE &&
+          q.predicate.value !== RDFS_LABEL &&
+          q.predicate.value !== RDFS_COMMENT
+      );
+      const types = inferredTypesForResource(iri);
+      if (!hasInstanceData && !types.length && !declaredTypes.has(OWL_NAMED_INDIVIDUAL))
+        continue;
+      const individual = {
+        iri,
+        label: literalValue(iri, RDFS_LABEL),
+        comment: literalValue(iri, RDFS_COMMENT),
+        types,
+        objectAssertions: [],
+        dataAssertions: [],
+      };
+      for (const q of subjectQuads) {
+        const predicate = q.predicate.value;
+        if (
+          predicate === RDF_TYPE ||
+          predicate === RDFS_LABEL ||
+          predicate === RDFS_COMMENT
+        )
+          continue;
+        if (q.object.termType === "Literal") {
+          individual.dataAssertions.push({
+            property: predicate,
+            value: q.object.value,
+            datatype: q.object.datatype ? q.object.datatype.value : undefined,
+            language: q.object.language || undefined,
+          });
+        } else if (
+          q.object.termType === "NamedNode" ||
+          q.object.termType === "BlankNode"
+        ) {
+          individual.objectAssertions.push({
+            property: predicate,
+            target: termId(q.object),
+          });
+        }
+      }
+      model.individuals.push(individual);
+    }
+    return model;
+  }
+
+  function parseDocument(text) {
+    const source = String(text || "").replace(/^\uFEFF/, "").trim();
+    if (!source) throw new Error("Empty document");
+    const looksLikeXml =
+      /^<\?xml\b/i.test(source) ||
+      /^<!DOCTYPE\b/i.test(source) ||
+      /^<[A-Za-z_][\w.-]*(?::[\w.-]+)?(?:\s|>)/.test(source);
+    return looksLikeXml ? parse(source) : parseTurtle(source);
+  }
+
   function makeId() {
     return Math.random().toString(36).slice(2, 10);
   }
@@ -966,6 +1185,8 @@
     shorten,
     serialize,
     parse,
+    parseTurtle,
+    parseDocument,
     emptyOntology,
     isAbsoluteIri,
     makeId,
