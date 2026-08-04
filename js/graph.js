@@ -65,19 +65,122 @@
       viewport.setAttribute("transform", `translate(${tx} ${ty}) scale(${scale})`);
     }
 
+    function degreeOf(node) {
+      return node._degree || 0;
+    }
+
+    function refreshDegrees() {
+      for (const n of nodes) n._degree = 0;
+      for (const l of links) {
+        if (l.source) l.source._degree = (l.source._degree || 0) + 1;
+        if (l.target) l.target._degree = (l.target._degree || 0) + 1;
+      }
+    }
+
+    function idealEdgeLength(a, b) {
+      const dense = nodes.length > 120;
+      const base = dense ? 140 : 110;
+      return base + Math.max(degreeOf(a), degreeOf(b)) * (dense ? 7 : 3);
+    }
+
+    function seedRadialLayout(cx, cy) {
+      refreshDegrees();
+      const hubs = nodes
+        .filter((n) => degreeOf(n) >= 3)
+        .sort((a, b) => degreeOf(b) - degreeOf(a));
+      const placed = new Set();
+      const ringCount = Math.max(1, hubs.length);
+      const densest = hubs.length ? degreeOf(hubs[0]) : 0;
+      const leafRadius = Math.max(140, 40 + densest * 11);
+      // Keep hub rings from overlapping: adjacent hub distance ~ 2.1 * leaf radius.
+      const minAdjacent = leafRadius * 2.1;
+      const hubRadius = Math.max(
+        240,
+        20 * Math.sqrt(nodes.length),
+        ringCount <= 1 ? leafRadius : minAdjacent / (2 * Math.sin(Math.PI / ringCount))
+      );
+
+      hubs.forEach((hub, index) => {
+        const angle = (Math.PI * 2 * index) / ringCount - Math.PI / 2;
+        hub.x = cx + Math.cos(angle) * hubRadius;
+        hub.y = cy + Math.sin(angle) * hubRadius;
+        hub.vx = 0;
+        hub.vy = 0;
+        hub.pinned = false;
+        placed.add(hub);
+      });
+
+      for (const hub of hubs) {
+        const neighbors = [];
+        for (const l of links) {
+          if (l.source === hub && !placed.has(l.target)) neighbors.push(l.target);
+          else if (l.target === hub && !placed.has(l.source)) neighbors.push(l.source);
+        }
+        const radius = Math.max(140, 40 + neighbors.length * 11);
+        neighbors.forEach((node, index) => {
+          const angle = (Math.PI * 2 * index) / Math.max(1, neighbors.length);
+          // Slight radial jitter so neighbors are not perfectly co-circular.
+          const jitter = 0.85 + ((index % 5) * 0.04);
+          node.x = hub.x + Math.cos(angle) * radius * jitter;
+          node.y = hub.y + Math.sin(angle) * radius * jitter;
+          node.vx = 0;
+          node.vy = 0;
+          node.pinned = false;
+          placed.add(node);
+        });
+      }
+
+      const leftovers = nodes.filter((n) => !placed.has(n));
+      if (!leftovers.length) return;
+      const columns = Math.max(1, Math.ceil(Math.sqrt(leftovers.length)));
+      const spacing = nodes.length > 120 ? 88 : 96;
+      leftovers.forEach((node, index) => {
+        const column = index % columns;
+        const row = Math.floor(index / columns);
+        node.x = cx + (column - (columns - 1) / 2) * spacing;
+        node.y = cy + hubRadius + leafRadius + 120 + row * spacing;
+        node.vx = 0;
+        node.vy = 0;
+        node.pinned = false;
+      });
+    }
+
+    function fit() {
+      if (!nodes.length) return;
+      const xs = nodes.map((n) => n.x).filter(Number.isFinite);
+      const ys = nodes.map((n) => n.y).filter(Number.isFinite);
+      if (!xs.length || !ys.length) return;
+      const minX = Math.min(...xs);
+      const maxX = Math.max(...xs);
+      const minY = Math.min(...ys);
+      const maxY = Math.max(...ys);
+      const w = maxX - minX || 1;
+      const h = maxY - minY || 1;
+      const rect = container.getBoundingClientRect();
+      const width = rect.width || container.clientWidth || 1;
+      const height = rect.height || container.clientHeight || 1;
+      const pad = 60;
+      const nextScale = Math.min((width - pad * 2) / w, (height - pad * 2) / h, 1.5);
+      if (!Number.isFinite(nextScale) || nextScale <= 0) return;
+      scale = Math.max(0.05, nextScale);
+      tx = width / 2 - (minX + w / 2) * scale;
+      ty = height / 2 - (minY + h / 2) * scale;
+      applyTransform();
+    }
+
     function step() {
       const rect = { width: container.clientWidth, height: container.clientHeight };
       const cx = rect.width / 2;
       const cy = rect.height / 2;
 
       const dense = nodes.length > 120;
-      const repulsion = dense ? 650 : 1100;
-      const springLen = dense ? 72 : 100;
-      const springK = dense ? 0.012 : 0.018;
-      const gravity = dense ? 0.003 : 0.012;
-      const damping = dense ? 0.68 : 0.78;
-      const maxSpeed = dense ? 3.5 : 6;
-      const maxTicks = nodes.length > 400 ? 60 : dense ? 100 : 240;
+      const repulsion = dense ? 4200 : 1600;
+      const minDistance = dense ? 64 : 42;
+      const springK = dense ? 0.012 : 0.022;
+      const gravity = dense ? 0.00025 : 0.008;
+      const damping = dense ? 0.76 : 0.8;
+      const maxSpeed = dense ? 12 : 7;
+      const maxTicks = nodes.length > 400 ? 220 : dense ? 280 : 280;
 
       for (const a of nodes) {
         a.fx = 0;
@@ -92,10 +195,17 @@
           let dx = a.x - b.x;
           let dy = a.y - b.y;
           let d2 = dx * dx + dy * dy;
-          if (d2 < 0.01) { d2 = 0.01; dx = (Math.random() - 0.5); dy = (Math.random() - 0.5); }
-          const f = repulsion / d2;
+          if (d2 < 0.01) {
+            d2 = 0.01;
+            dx = (Math.random() - 0.5) || 0.01;
+            dy = (Math.random() - 0.5) || 0.01;
+          }
           const d = Math.sqrt(d2);
-          const nx = dx / d, ny = dy / d;
+          const nx = dx / d;
+          const ny = dy / d;
+          // Soft-core repulsion keeps hubs from collapsing into a blob.
+          let f = repulsion / d2;
+          if (d < minDistance) f += ((minDistance - d) / minDistance) * 48;
           a.fx += nx * f;
           a.fy += ny * f;
           b.fx -= nx * f;
@@ -107,7 +217,8 @@
         const dx = b.x - a.x;
         const dy = b.y - a.y;
         const d = Math.sqrt(dx * dx + dy * dy) || 0.1;
-        const diff = (d - springLen) * springK;
+        const desired = idealEdgeLength(a, b);
+        const diff = (d - desired) * springK;
         const nx = dx / d, ny = dy / d;
         a.fx += nx * diff;
         a.fy += ny * diff;
@@ -129,17 +240,18 @@
       }
       renderPositions();
       ticks++;
-      if (ticks < maxTicks && movement > nodes.length * 0.015 && running) {
+      if (ticks < maxTicks && movement > nodes.length * 0.02 && running) {
         rafId = requestAnimationFrame(step);
       } else {
         running = false;
         rafId = null;
+        fit();
       }
     }
 
-    function start() {
+    function start(resetTicks = true) {
       if (running || !nodes.length) return;
-      ticks = 0;
+      if (resetTicks) ticks = 0;
       running = true;
       rafId = requestAnimationFrame(step);
     }
@@ -148,6 +260,14 @@
       running = false;
       if (rafId) cancelAnimationFrame(rafId);
       rafId = null;
+    }
+
+    function reheat() {
+      if (!nodes.length) return;
+      stop();
+      const rect = container.getBoundingClientRect();
+      seedRadialLayout(rect.width / 2 || 150, rect.height / 2 || 150);
+      start(true);
     }
 
     function renderPositions() {
@@ -186,24 +306,40 @@
       const rect = container.getBoundingClientRect();
       const cx = rect.width / 2 || 150;
       const cy = rect.height / 2 || 150;
-      const columns = Math.max(1, Math.ceil(Math.sqrt(nodes.length)));
-      const rows = Math.max(1, Math.ceil(nodes.length / columns));
-      const spacing = nodes.length > 120 ? 58 : 82;
-      for (let index = 0; index < nodes.length; index++) {
-        const n = nodes[index];
+      let reused = 0;
+      for (const n of nodes) {
         const previous = previousPositions.get(n.iri);
         if (previous && Number.isFinite(previous.x) && Number.isFinite(previous.y)) {
           n.x = previous.x;
           n.y = previous.y;
           n.pinned = previous.pinned;
+          reused++;
         } else {
-          const column = index % columns;
-          const row = Math.floor(index / columns);
-          n.x = cx + (column - (columns - 1) / 2) * spacing;
-          n.y = cy + (row - (rows - 1) / 2) * spacing;
+          n.x = NaN;
+          n.y = NaN;
+          n.pinned = false;
         }
         n.vx = 0;
         n.vy = 0;
+      }
+      // Fresh/mostly-new graphs get a hub-aware radial seed so dense
+      // instance graphs do not start as a tight overlapping blob.
+      if (!nodes.length) {
+        // nothing to place
+      } else if (reused < nodes.length * 0.5) {
+        seedRadialLayout(cx, cy);
+      } else {
+        const missing = nodes.filter((n) => !Number.isFinite(n.x) || !Number.isFinite(n.y));
+        if (missing.length) {
+          const columns = Math.max(1, Math.ceil(Math.sqrt(missing.length)));
+          const spacing = nodes.length > 120 ? 88 : 92;
+          missing.forEach((n, index) => {
+            const column = index % columns;
+            const row = Math.floor(index / columns);
+            n.x = cx + (column - (columns - 1) / 2) * spacing;
+            n.y = cy + 180 + row * spacing;
+          });
+        }
       }
 
       const showLinkLabels = links.length <= 80;
@@ -429,22 +565,8 @@
 
     return {
       setData,
-      fit: () => {
-        if (!nodes.length) return;
-        const xs = nodes.map((n) => n.x);
-        const ys = nodes.map((n) => n.y);
-        const minX = Math.min(...xs), maxX = Math.max(...xs);
-        const minY = Math.min(...ys), maxY = Math.max(...ys);
-        const w = (maxX - minX) || 1;
-        const h = (maxY - minY) || 1;
-        const rect = container.getBoundingClientRect();
-        const pad = 60;
-        scale = Math.min((rect.width - pad * 2) / w, (rect.height - pad * 2) / h, 1.5);
-        tx = rect.width / 2 - (minX + w / 2) * scale;
-        ty = rect.height / 2 - (minY + h / 2) * scale;
-        applyTransform();
-      },
-      reheat: start,
+      fit,
+      reheat,
       stop,
       destroy: () => {
         stop();

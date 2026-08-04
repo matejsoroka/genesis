@@ -1,0 +1,97 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <meta charset="utf-8" />
+    <style>
+      html, body { margin: 0; height: 100%; background: #0b1220; overflow: hidden; }
+      #g { width: 1200px; height: 800px; }
+    </style>
+  </head>
+  <body>
+    <div id="g"></div>
+    <script src="../js/graph.js"></script>
+    <script>
+      (function () {
+        const host = document.getElementById("g");
+        const graph = Graph.create(host);
+        window.__graph = graph;
+        const hubs = 8;
+        const leavesPerHub = 30;
+        const nodes = [];
+        const links = [];
+        const byIri = new Map();
+
+        for (let h = 0; h < hubs; h++) {
+          const hub = {
+            iri: "hub:" + h,
+            label: "Hub" + h,
+            kind: "individual",
+            color: "#1d4ed8",
+            borderColor: "#93c5fd",
+          };
+          nodes.push(hub);
+          byIri.set(hub.iri, hub);
+          for (let i = 0; i < leavesPerHub; i++) {
+            const leaf = {
+              iri: "leaf:" + h + ":" + i,
+              label: "p" + h + "_" + i,
+              kind: "individual",
+              color: "#312e81",
+              borderColor: "#a78bfa",
+            };
+            nodes.push(leaf);
+            byIri.set(leaf.iri, leaf);
+            links.push({ source: hub, target: leaf, kind: "obj", label: "has" });
+          }
+        }
+        for (let h = 0; h < hubs - 1; h++) {
+          links.push({
+            source: byIri.get("hub:" + h),
+            target: byIri.get("hub:" + (h + 1)),
+            kind: "obj",
+            label: "related",
+          });
+        }
+
+        graph.setData(nodes, links);
+
+        setTimeout(() => {
+          graph.stop();
+          graph.fit();
+          const pts = nodes.map((n) => ({ x: n.x, y: n.y }));
+          let minX = Infinity, maxX = -Infinity, minY = Infinity, maxY = -Infinity;
+          let sumNN = 0;
+          for (const p of pts) {
+            minX = Math.min(minX, p.x);
+            maxX = Math.max(maxX, p.x);
+            minY = Math.min(minY, p.y);
+            maxY = Math.max(maxY, p.y);
+          }
+          for (let i = 0; i < pts.length; i++) {
+            let best = Infinity;
+            for (let j = 0; j < pts.length; j++) {
+              if (i === j) continue;
+              const d = Math.hypot(pts[i].x - pts[j].x, pts[i].y - pts[j].y);
+              if (d < best) best = d;
+            }
+            sumNN += best;
+          }
+          const width = maxX - minX;
+          const height = maxY - minY;
+          const avgNearestNeighbor = sumNN / pts.length;
+          window.__layoutMetrics = {
+            nodes: pts.length,
+            links: links.length,
+            width,
+            height,
+            area: width * height,
+            avgNearestNeighbor,
+            ok: width > 1500 && height > 1500 && avgNearestNeighbor > 50,
+          };
+          document.title = JSON.stringify(window.__layoutMetrics);
+          document.documentElement.setAttribute("data-ready", "1");
+        }, 7000);
+      })();
+    </script>
+  </body>
+</html>
